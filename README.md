@@ -74,4 +74,11 @@ The technologies, tools, and languages listed above represent the **current and 
 
 Any changes will follow industry best practices and remain aligned with the project’s core objective: building a real-time, production-inspired fraud detection system.
 
+##Group Members:
+Aniruddha Ashok Patil
+Jibola Johnson Odekunle
+Anderson Lucas Cachinavissa Aurelio
+Onyinye Eugenia Asadu
+Gaurav Sanjay Karnavar
+
 
