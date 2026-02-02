@@ -73,8 +73,10 @@ This project is actively developed and iterative by design.
 The technologies, tools, and languages listed above represent the **current and intended stack**, but certain components may evolve during development to improve performance, scalability, or learning outcomes.
 
 Any changes will follow industry best practices and remain aligned with the project’s core objective: building a real-time, production-inspired fraud detection system.
+---
 
-##Group Members:
+## 👥 Group Members:
+
 Aniruddha Ashok Patil,
 Jibola Johnson Odekunle,
 Anderson Lucas Cachinavissa Aurelio,
