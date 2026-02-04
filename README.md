@@ -48,34 +48,34 @@ Every transaction, alert, and risk score appears in real time on an interactive 
 
 ### ✨ Key Features
 
-Real-time transaction processing
-Fraud detection using both machine learning and anomaly detection
-Behavioural and velocity-based feature engineering
-Transaction-level risk scoring
-Live fraud alerts delivered instantly
-Interactive dashboard for analysts
+Real-time transaction processing,
+Fraud detection using both machine learning and anomaly detection,
+Behavioural and velocity-based feature engineering,
+Transaction-level risk scoring,
+Live fraud alerts delivered instantly,
+Interactive dashboard for analysts,
 Scalable design modeled after real financial systems
 
 ### 🛠  Tech Stack
 
 #### Machine Learning
 
-Python
-Pandas
-NumPy
-Scikit-learn
-XGBoost
+Python,
+Pandas,
+NumPy,
+Scikit-learn,
+XGBoost,
 Isolation Forest
 
 #### Backend
 
-FastAPI
-WebSockets
+FastAPI,
+WebSockets,
 Streaming & Storage
 
 Apache Kafka (simulated for development)
-PostgreSQL
-Redis
+PostgreSQL,
+Redis,
 Frontend
 
 React
@@ -113,8 +113,8 @@ The technologies listed represent the current stack, but components may evolve a
 
 ### 👥  Group Members
 
-Aniruddha Ashok Patil
-Jibola Johnson Odekunle
-Anderson Lucas Cachinavissa Aurelio
-Onyinye Eugenia Asadu
+Aniruddha Ashok Patil,
+Jibola Johnson Odekunle,
+Anderson Lucas Cachinavissa Aurelio,
+Onyinye Eugenia Asadu,
 Gaurav Sanjay Karnavar
