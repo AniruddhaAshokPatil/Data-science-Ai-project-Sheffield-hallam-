@@ -46,7 +46,7 @@ If the score is high, analysts are alerted instantly. There is no delays.
 
 Every transaction, alert, and risk score appears in real time on an interactive dashboard.
 
-✨ ### Key Features
+### ✨ Key Features
 
 Real-time transaction processing
 Fraud detection using both machine learning and anomaly detection
@@ -56,7 +56,7 @@ Live fraud alerts delivered instantly
 Interactive dashboard for analysts
 Scalable design modeled after real financial systems
 
-🛠 ### Tech Stack
+### 🛠  Tech Stack
 
 #### Machine Learning
 
@@ -81,7 +81,7 @@ Frontend
 React
 Chart.js / Recharts
 
-🏗 ### System Architecture
+### 🏗  System Architecture
 
 The system processes transactions through the following real-time pipeline:
 
@@ -106,12 +106,12 @@ Alert Engine
 Live Dashboard
 (Real-time visualization of the entire fraud detection pipeline)
 
-🧩 ### Implementation Notes
+### 🧩  Implementation Notes
 
 This project is actively developed and intentionally iterative.
 The technologies listed represent the current stack, but components may evolve as we refine performance, scalability, and learning outcomes. All updates will follow industry best practices and remain aligned with the project’s core objective: building a real-time, production-inspired fraud detection system.
 
-👥 ### Group Members
+### 👥  Group Members
 
 Aniruddha Ashok Patil
 Jibola Johnson Odekunle
