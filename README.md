@@ -70,14 +70,15 @@ Isolation Forest
 #### Backend
 
 FastAPI,
-WebSockets,
-Streaming & Storage
+WebSockets
 
-Apache Kafka (simulated for development)
+#### Streaming & Storage
+
+Apache Kafka, 
 PostgreSQL,
 Redis,
-Frontend
 
+#### Frontend
 React
 Chart.js / Recharts
 
@@ -87,22 +88,28 @@ The system processes transactions through the following real-time pipeline:
 
 Transaction
 (The firehose — raw incoming financial activity)
-⬇
+⬇  
+
 Stream Processor
 (Receives and processes each transaction instantly)
-⬇
+⬇  
+
 Feature Engineering
 (Builds behavioural signals — spending speed, unusual location/device, pattern changes)
-⬇
+⬇  
+
 ML Models (Classification + Anomaly Detection)
 (Two AI models working together to evaluate risk)
-⬇
+⬇  
+
 Risk Scoring
 (Combines evidence to determine overall suspiciousness)
-⬇
+⬇  
+
 Alert Engine
 (Sends high-risk events to analysts immediately)
-⬇
+⬇  
+
 Live Dashboard
 (Real-time visualization of the entire fraud detection pipeline)
 
