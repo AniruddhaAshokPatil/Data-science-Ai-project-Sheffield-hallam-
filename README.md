@@ -81,6 +81,7 @@ Redis,
 #### Frontend
 React
 Chart.js / Recharts
+Real-time alert stream
 
 ###  System Architecture
 
