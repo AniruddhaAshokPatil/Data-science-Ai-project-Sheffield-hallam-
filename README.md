@@ -1,127 +1,186 @@
-## Real-Time Financial Fraud Detection System
+# **Real-Time Multimodal Financial Fraud Detection System**
 
-A real-time machine learning system designed to detect fraudulent financial transactions using structured data, anomaly detection, behavioural modelling, and supervised learning — complete with live alerts and an interactive monitoring dashboard.
+A real-time machine learning application designed to detect fraudulent financial transactions using **structured data**, **behaviour‑based features**, **supervised ML**, **anomaly detection**, **Computer Vision (CV)**, and **Natural Language Processing (NLP)** with all of it displayed on a simple **live dashboard** that updates immediately when a suspicious transaction appears.
 
-### 🚨 Problem Statement
+***
 
-Financial fraud continues to be a major challenge for banks, fintech companies, and customers. Every year, billions are lost to increasingly fast, adaptive, and sophisticated fraud schemes. As digital payments explode in popularity, attackers evolve just as quickly — exploiting weaknesses in systems that cannot respond fast enough.
+# **Problem Statement**
 
-Most traditional fraud detection setups work in batches, meaning they analyse transactions only after they’ve already happened. This creates a dangerous delay where fraudulent activity can slip through, harming customers and damaging institutional trust.
+Fraud is one of the biggest threats in digital payments. Attackers move quickly, often exploiting systems that only analyse transactions after they have already happened. Batch‑processing fraud tools create dangerous delays where fraud may go undetected.
 
-This project solves that problem by building a real-time fraud detection system. It analyses each transaction the moment it occurs, identifies suspicious behaviour instantly, and raises immediate alerts. By combining supervised machine learning with anomaly detection and velocity-based behavioural features, the system aims to reduce fraud while protecting genuine customers in a scalable, production-inspired environment.
+Our aim is to build a system that:
 
-### How the System Works
+*   reacts to suspicious transactions **immediately**,
+*   uses beginner‑friendly machine learning techniques,
+*   enriches the analysis with **image** and **text** signals,
+*   and presents everything in a clear, real‑time dashboard.
 
-Imagine a security guard watching a busy mall:
+This project demonstrates how modern fraud systems combine multiple AI methods to support better decision‑making, even when implemented with simple, accessible tools.
 
-1. A transaction comes in
+***
 
-Someone tries to buy something — the system “notices” this immediately.
+# ** How the System Works **
 
-2. Stream processor watches in real time
+Think of our system as a digital security guard:
 
-Just like the security guard’s eyes, it monitors activity as it happens.
+### **1. A transaction arrives**
 
-3. Feature engineering — the system asks smart questions:
+Our program receives each transaction instantly.
 
-Is this person spending faster than they normally do?
-Is the purchase happening in a new or unusual location?
-Is the device unfamiliar?
-Does this pattern resemble something suspicious we’ve seen before?
+### **2. Behaviour checks**
 
-4. Machine learning models evaluate the behaviour
+The system calculates simple features such as:
 
-One model checks if the transaction matches known fraud patterns.
-Another model (anomaly detector) checks if the behaviour looks unusual, even if it’s something completely new.
+*   spending speed,
+*   unusual device,
+*   amount spikes,
+*   new merchant behaviour.
 
-5. Risk score is calculated
+### **3. Machine Learning models evaluate fraud risk**
 
-The system assigns the transaction a “danger score” based on all the evidence.
+We use two models:
 
-6. Alert engine triggers warnings
+*   **Supervised ML model** (XGBoost or Logistic Regression)
+*   **Anomaly model** (Isolation Forest)
 
-If the score is high, analysts are alerted instantly. There is no delays.
+### **4. CV & NLP add extra clues**
 
-7. Dashboard displays everything live
+To make it multimodal:
 
-Every transaction, alert, and risk score appears in real time on an interactive dashboard.
+*   **CV model**: checks if an uploaded document image looks fake
+*   **NLP model**: checks if text messages look like phishing or scam attempts
 
-### ✨ Key Features
+These are small models trained on simple datasets — ** **.
 
-Real-time transaction processing,
-Fraud detection using both machine learning and anomaly detection,
-Behavioural and velocity-based feature engineering,
-Transaction-level risk scoring,
-Live fraud alerts delivered instantly,
-Interactive dashboard for analysts,
-Scalable design modeled after real financial systems
+### **5. Risk Score**
 
-### 🛠  Tech Stack
+The models produce fraud‑risk scores.
 
-#### Machine Learning
+### **6. Alert Engine**
 
-Python,
-Pandas,
-NumPy,
-Scikit-learn,
-XGBoost,
-Isolation Forest
+If a transaction looks suspicious, the backend sends an **instant alert** to the dashboard.
 
-#### Backend
+### **7. Real-Time Dashboard**
 
-FastAPI,
-WebSockets
+A small React dashboard shows:
 
-#### Streaming & Storage
+*   incoming transactions,
+*   alerts,
+*   CV/NLP results,
+*   and model scores.
 
-Apache Kafka, 
-PostgreSQL,
-Redis,
 
-#### Frontend
-React
-Chart.js / Recharts
+***
 
-### 🏗  System Architecture
+# **Key Features **
 
-The system processes transactions through the following real-time pipeline:
+*   Real-time transaction scoring
+*   Supervised ML with Python libraries
+*   Anomaly detection using Isolation Forest
+*   Behaviour and velocity features
+*   Simple CV forgery‑detection model
+*   Basic NLP phishing classifier
+*   Live alerts through a lightweight backend
+*   Clean dashboard built with React
 
-Transaction
-(The firehose — raw incoming financial activity)
-⬇  
 
-Stream Processor
-(Receives and processes each transaction instantly)
-⬇  
+# **Tech Stack **
 
-Feature Engineering
-(Builds behavioural signals — spending speed, unusual location/device, pattern changes)
-⬇  
+### **Machine Learning**
 
-ML Models (Classification + Anomaly Detection)
-(Two AI models working together to evaluate risk)
-⬇  
+*   Python
+*   Pandas, NumPy
+*   Scikit‑learn
+*   XGBoost (optional)
+*   TensorFlow/PyTorch (small CV model)
+*   HuggingFace Transformers (small NLP model)
 
-Risk Scoring
-(Combines evidence to determine overall suspiciousness)
-⬇  
+### **Backend**
 
-Alert Engine
-(Sends high-risk events to analysts immediately)
-⬇  
+*   FastAPI 
+*   WebSockets for real-time updates
 
-Live Dashboard
-(Real-time visualization of the entire fraud detection pipeline)
+### **Frontend**
 
-### 🧩  Implementation Notes
+*   React
+*   Recharts / Chart.js
 
-This project is actively developed and intentionally iterative.
-The technologies listed represent the current stack, but components may evolve as we refine performance, scalability, and learning outcomes. All updates will follow industry best practices and remain aligned with the project’s core objective: building a real-time, production-inspired fraud detection system.
+### **Data**
 
-### 👥  Group Members
+*   IEEE‑CIS (tabular data)
+*   Public small CV datasets (forgery detection)
+*   Public phishing datasets (for NLP)
 
-Aniruddha Ashok Patil,
-Jibola Johnson Odekunle,
-Anderson Lucas Cachinavissa Aurelio,
-Onyinye Eugenia Asadu,
-Gaurav Sanjay Karnavar
+***
+
+# **Multimodal AI Components**
+
+## **📸 Computer Vision **
+
+A small CNN model detects basic document/image manipulations.  
+It is trained on a simple open-source dataset with:
+
+*   resizing
+*   normalization
+*   basic augmentation
+
+Output: a **forgery probability score**.
+
+API: `/predict_document`
+
+***
+
+## ** NLP Phishing Detection **
+
+A small DistilBERT text classifier detects phishing-like messages.
+
+*   minimal text cleaning
+*   simple train/val/test split
+*   small dataset
+
+API: `/predict_text`
+
+***
+
+# **Updated System Architecture **
+
+
+    Incoming Transaction
+            |
+            v
+    Feature Engineering
+            |
+            +-------------------+
+            |                   |
+    Supervised ML Model     Anomaly Model
+    (XGBoost/LogReg)        (Isolation Forest)
+            |                   |
+            +--------+----------+
+                     |
+                Risk Scoring
+            +--------+---------+
+            |                  |
+     CV Model             NLP Model
+    (Document check)    (Text check)
+            |                  |
+            +---------+--------+
+                      |
+               Alert Engine (FastAPI)
+                      |
+                      v
+            React Dashboard (live updates)
+
+
+
+
+
+***
+
+# Group Members
+
+*   **Aniruddha Ashok Patil**
+*   **Jibola Johnson Odekunle**
+*   **Anderson Lucas Cachinavissa Aurelio**
+*   **Onyinye Eugenia Asadu**
+*   **Gaurav Sanjay Karnavar**
+  
