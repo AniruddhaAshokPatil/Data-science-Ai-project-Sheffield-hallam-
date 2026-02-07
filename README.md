@@ -1,6 +1,6 @@
 # **Real-Time Multimodal Financial Fraud Detection System**
 
-A real-time machine learning application designed to detect fraudulent financial transactions using **structured data**, **behaviour‑based features**, **supervised ML**, **anomaly detection**, **Computer Vision (CV)**, and **Natural Language Processing (NLP)** — all displayed on a simple **live dashboard** that updates immediately when a suspicious transaction appears.
+A real-time machine learning application designed to detect fraudulent financial transactions using **structured data**, **behaviour‑based features**, **supervised ML**, **anomaly detection**, **Computer Vision (CV)**, and **Natural Language Processing (NLP)** with all of it displayed on a simple **live dashboard** that updates immediately when a suspicious transaction appears.
 
 ***
 
@@ -176,7 +176,7 @@ API: `/predict_text`
 
 ***
 
-# **Group Members**
+# Group Members
 
 *   **Aniruddha Ashok Patil**
 *   **Jibola Johnson Odekunle**
