@@ -74,14 +74,14 @@ A small React dashboard shows:
 
 # **Key Features **
 
-*   ⚡ Real-time transaction scoring
-*   🤖 Supervised ML with Python libraries
-*   🔍 Anomaly detection using Isolation Forest
-*   🧠 Behaviour and velocity features
-*   📸 Simple CV forgery‑detection model
-*   💬 Basic NLP phishing classifier
-*   🚨 Live alerts through a lightweight backend
-*   📊 Clean dashboard built with React
+*   Real-time transaction scoring
+*   Supervised ML with Python libraries
+*   Anomaly detection using Isolation Forest
+*   Behaviour and velocity features
+*   Simple CV forgery‑detection model
+*   Basic NLP phishing classifier
+*   Live alerts through a lightweight backend
+*   Clean dashboard built with React
 
 
 # **Tech Stack **
