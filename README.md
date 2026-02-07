@@ -142,7 +142,7 @@ API: `/predict_text`
 
 ***
 
-# **Updated System Architecture (Simplified for Beginners)**
+# **Updated System Architecture **
 
 
     Incoming Transaction
