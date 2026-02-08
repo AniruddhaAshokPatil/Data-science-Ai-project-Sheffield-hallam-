@@ -50,7 +50,7 @@ To make it multimodal:
 *   **CV model**: checks if an uploaded document image looks fake
 *   **NLP model**: checks if text messages look like phishing or scam attempts
 
-These are small models trained on simple datasets — ** **.
+These are small models trained on simple datasets.
 
 ### **5. Risk Score**
 
