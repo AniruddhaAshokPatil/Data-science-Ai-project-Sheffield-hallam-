@@ -115,7 +115,7 @@ A small React dashboard shows:
 
 # **Multimodal AI Components**
 
-## **📸 Computer Vision **
+## **Computer Vision **
 
 A small CNN model detects basic document/image manipulations.  
 It is trained on a simple open-source dataset with:
