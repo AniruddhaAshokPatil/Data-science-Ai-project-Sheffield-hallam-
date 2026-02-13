@@ -50,7 +50,7 @@ To make it multimodal:
 *   **CV model**: checks if an uploaded document image looks fake
 *   **NLP model**: checks if text messages look like phishing or scam attempts
 
-These are small models trained on simple datasets — ** **.
+These are small models trained on simple datasets.
 
 ### **5. Risk Score**
 
@@ -115,7 +115,7 @@ A small React dashboard shows:
 
 # **Multimodal AI Components**
 
-## **📸 Computer Vision **
+## **Computer Vision **
 
 A small CNN model detects basic document/image manipulations.  
 It is trained on a simple open-source dataset with:
