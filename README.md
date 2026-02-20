@@ -23,11 +23,11 @@ This project demonstrates how modern fraud systems combine multiple AI methods t
 
 Think of our system as a digital security guard:
 
-### **1. A transaction arrives**
+### *1. A transaction arrives**
 
 Our program receives each transaction instantly.
 
-### **2. Behaviour checks**
+### *2. Behaviour checks**
 
 The system calculates simple features such as:
 
@@ -36,14 +36,14 @@ The system calculates simple features such as:
 *   amount spikes,
 *   new merchant behaviour.
 
-### **3. Machine Learning models evaluate fraud risk**
+### *3. Machine Learning models evaluate fraud risk**
 
 We use two models:
 
 *   **Supervised ML model** (XGBoost or Logistic Regression)
 *   **Anomaly model** (Isolation Forest)
 
-### **4. CV & NLP add extra clues**
+### *4. CV & NLP add extra clues**
 
 To make it multimodal:
 
