@@ -1,0 +1,57 @@
+:root {
+  --bg: #0b1020;
+  --card: #121a2b;
+  --muted: #a3b1c6;
+  --text: #e5ecf4;
+  --accent: #3b82f6;
+  --danger: #ef4444;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --border: #1f2937;
+  --row: #0f1629;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+
+.layout { display: flex; flex-direction: column; min-height: 100vh; }
+.header {
+  background: #0e1526; border-bottom: 1px solid var(--border);
+  padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-size: 18px; margin: 0; }
+.header .status { font-size: 12px; color: var(--muted); }
+.header .status .dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
+}
+.header .status .up { background: var(--ok); }
+.header .status .down { background: var(--danger); }
+
+.content { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; padding: 14px; }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.panel h2 { margin: 0; font-size: 16px; }
+
+.badges { display: flex; gap: 8px; }
+.badge {
+  padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;
+  background: #0b1223; border: 1px solid var(--border); color: var(--text);
+}
+
+.table-wrap { max-height: calc(100vh - 210px); overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { position: sticky; top: 0; background: #0e1526; text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+tbody tr { background: var(--row); border-bottom: 1px solid var(--border); }
+tbody td { padding: 10px; }
+tbody tr.high { background: rgba(239, 68, 68, 0.12); }
+tbody tr:hover { background: #16203a; }
+
+.controls { padding: 12px 14px; display: grid; gap: 12px; }
+.controls .row { display: grid; gap: 6px; }
+.controls label { font-size: 13px; color: var(--muted); }
+.controls input, .controls textarea, .controls button, .controls select {
+  background: #0b1223; color: var(--text); border: 1px solid var(--border);
+  padding: 10px; border-radius: 6px; font-size: 14px;
+}
+.controls button { cursor: pointer; background: var(--accent); border: 0; }
+.controls .group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }

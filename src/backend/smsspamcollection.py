@@ -1,85 +1,115 @@
+import pandas as pd
 from pathlib import Path
 
-import pandas as pd
+# Simple imports (much easier for beginners)
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.naive_bayes import MultinomialNB
+import joblib
 
 
-def run_sms_classifier(path=None, test_message=None, verbose=True):
-    """Train and evaluate a simple SMS spam model."""
-    try:
-        from sklearn.feature_extraction.text import CountVectorizer
-        from sklearn.metrics import classification_report
-        from sklearn.model_selection import train_test_split
-        from sklearn.naive_bayes import MultinomialNB
-    except ImportError:
-        print(
-            "Missing dependency: scikit-learn. "
-            "Install it with `pip install scikit-learn`."
-        )
-        return None
+def run_sms_classifier(
+    path=None,
+    test_message=None,
+    verbose=True,
+    test_size=0.2,
+    random_state=42,
+    save_dir=None,
+):
+    """Train and test a simple SMS spam detection model."""
 
+    # ------------------------
+    #  Load Dataset
+    # ------------------------
     if path is None:
         project_root = Path(__file__).resolve().parents[2]
         path = project_root / "data" / "SMSSpamCollection"
     else:
         path = Path(path)
 
-    if verbose:
-        print("--- Starting NLP Spam Detection ---")
-
-    try:
-        my_df = pd.read_csv(path, sep="\t", names=["label", "message"])
-    except Exception as exc:
-        print(f"Could not load SMS dataset: {exc}")
+    if not path.exists():
+        print(f"Error: dataset not found at {path}")
         return None
 
-    my_df["label_num"] = my_df["label"].map({"ham": 0, "spam": 1})
+    try:
+        df = pd.read_csv(
+            path,
+            sep="\t",
+            names=["label", "message"],
+            encoding="utf-8",
+            on_bad_lines="skip"
+        )
+    except Exception as e:
+        print("Could not read dataset:", e)
+        return None
 
+    # ------------------------
+    #  Clean Dataset
+    # ------------------------
+    df["label_num"] = df["label"].map({"ham": 0, "spam": 1})
+    df = df.dropna(subset=["label_num"])
+
+    # ------------------------
+    #  Train Test Split
+    # ------------------------
     X_train, X_test, y_train, y_test = train_test_split(
-        my_df["message"],
-        my_df["label_num"],
-        test_size=0.2,
-        random_state=42,
+        df["message"],
+        df["label_num"],
+        test_size=test_size,
+        random_state=random_state,
+        stratify=df["label_num"]
     )
 
-    my_vectorizer = CountVectorizer()
-    X_train_transformed = my_vectorizer.fit_transform(X_train)
-    X_test_transformed = my_vectorizer.transform(X_test)
+    # ------------------------
+    #  Vectorizer + Naive Bayes
+    # ------------------------
+    vectorizer = CountVectorizer()
+    X_train_vec = vectorizer.fit_transform(X_train)
+    X_test_vec = vectorizer.transform(X_test)
 
-    my_ai_model = MultinomialNB()
-    my_ai_model.fit(X_train_transformed, y_train)
+    model = MultinomialNB()
+    model.fit(X_train_vec, y_train)
 
-    predictions = my_ai_model.predict(X_test_transformed)
+    # ------------------------
+    #  Evaluation
+    # ------------------------
+    predictions = model.predict(X_test_vec)
 
     if verbose:
-        print("\n--- Performance Report ---")
-        print(
-            classification_report(
-                y_test,
-                predictions,
-                target_names=["Safe (Ham)", "Danger (Spam)"],
-            )
-        )
+        print("\n--- Model Report ---")
+        print(classification_report(y_test, predictions))
+        print("Confusion Matrix:")
+        print(confusion_matrix(y_test, predictions))
 
+    # ------------------------
+    #  Test Message
+    # ------------------------
     if test_message is None:
-        test_message = (
-            "URGENT: Your account has been compromised. "
-            "Log in at http://bit.ly/fake-bank to secure your funds."
-        )
+        test_message = "URGENT: Your bank account is locked. Click http://fake.com"
 
-    sample_vec = my_vectorizer.transform([test_message])
-    prediction = my_ai_model.predict(sample_vec)[0]
-    verdict = "SPAM/PHISHING" if prediction == 1 else "SAFE"
+    sample_vec = vectorizer.transform([test_message])
+    pred = model.predict(sample_vec)[0]
+
+    verdict = "SPAM" if pred == 1 else "SAFE"
 
     if verbose:
-        print(f"Test message: {test_message}")
-        print(f"Verdict: {verdict}")
+        print("\nTest Message:", test_message)
+        print("Prediction:", verdict)
+
+    # ------------------------
+    #  Save Model
+    # ------------------------
+    if save_dir:
+        save_dir = Path(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        joblib.dump(model, save_dir / "sms_model.joblib")
+        joblib.dump(vectorizer, save_dir / "sms_vectorizer.joblib")
 
     return {
-        "model": my_ai_model,
-        "vectorizer": my_vectorizer,
-        "test_message": test_message,
-        "test_prediction": int(prediction),
-        "test_verdict": verdict,
+        "verdict": verdict,
+        "model": model,
+        "vectorizer": vectorizer
     }
 
 

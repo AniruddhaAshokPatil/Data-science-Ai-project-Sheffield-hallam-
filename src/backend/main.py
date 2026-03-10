@@ -1,30 +1,62 @@
-from pathlib import Path
-import sys
+from fastapi import FastAPI, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 
-# Ensure the directory containing this script is on sys.path for sibling imports.
-backend_dir = Path(__file__).resolve().parent
-sys.path.append(str(backend_dir))
+from backend.routers import transactions, analytics, nlp
+from backend.websocket_manager import WebSocketManager
+from backend.logger import logger
 
-from outline_detection import find_my_outliers
-from visualization import visualize_my_risk
-
-project_root = backend_dir.parent.parent
-card_data_path = project_root / "data" / "card_transdata.csv"
-financial_data_path = project_root / "data" / "financial_fraud_detection_dataset 2.csv"
-output_dir = backend_dir / "outputs"
-output_dir.mkdir(parents=True, exist_ok=True)
-chart_output_path = output_dir / "risk_visualization.png"
-
-find_my_outliers(
-    str(card_data_path),
-    "ratio_to_median_purchase_price",
-    "Card Transaction Data"
+app = FastAPI(
+    title="Fraud Detection Backend (MVP)",
+    version="0.1.0",
 )
 
-find_my_outliers(
-    str(financial_data_path),
-    "spending_deviation_score",
-    "Financial Fraud Data"
+# Allow frontends/tools to call the API easily during development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # in dev only
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-visualize_my_risk(str(card_data_path), output_path=str(chart_output_path))
+# Routers
+app.include_router(transactions.router)
+app.include_router(analytics.router)
+app.include_router(nlp.router)
+
+# Shared WS manager
+ws_manager = WebSocketManager()
+
+from backend.websocket_manager import WebSocketManager
+ws_manager = WebSocketManager()
+
+@app.websocket("/ws/transactions")
+async def ws_transactions(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            msg = await websocket.receive_text()
+
+            # NEW: broadcast the message to all connected browsers
+            await ws_manager.broadcast({"raw": msg})
+
+    except Exception:
+        ws_manager.disconnect(websocket)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.websocket("/ws/transactions")
+async def ws_transactions(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    logger.info("WebSocket client connected")
+    try:
+        while True:
+            # We don't expect messages from client in MVP; keep the socket open
+            await websocket.receive_text()
+    except Exception:
+        ws_manager.disconnect(websocket)
+        logger.info("WebSocket client disconnected")
