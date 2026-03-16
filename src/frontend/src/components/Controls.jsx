@@ -69,26 +69,38 @@ export default function Controls({ onTestOne }) {
       <hr style={{ borderColor: '#1f2937' }} />
 
       <div className="row">
-        <strong>▶ NLP Spam/Phishing Test</strong>
-      </div>
-      <div className="row">
-        <label>Message</label>
-        <textarea rows={4} value={nlpText} onChange={(e) => setNlpText(e.target.value)} />
-      </div>
-      <div className="row">
-        <button onClick={predictNlp}>Classify Message</button>
-      </div>
+  <strong>▶ Generate Risk Visualization</strong>
+</div>
+<div className="row">
+  <label>CSV path (optional)</label>
+  <input
+    type="text"
+    placeholder="Leave empty to use default card_transdata.csv"
+    value={vizPath}
+    onChange={(e) => setVizPath(e.target.value)}
+  />
+</div>
+<div className="row">
+  <button onClick={visualize}>Generate Chart</button>
+</div>
 
       <hr style={{ borderColor: '#1f2937' }} />
 
       <div className="row">
-        <strong>▶ Generate Risk Visualization</strong>
+        <strong>▶ NLP Spam Detection</strong>
       </div>
       <div className="row">
-        <label>CSV path (optional)</label>
-        <input
-          type="text"
-          placeholder="Leave empty to use default card_transdata.csv"
-          value={vizPath}
-          onChange={(e) }
+        <label>Message</label>
+        <textarea
+          value={nlpText}
+          onChange={(e) => setNlpText(e.target.value)}
+          rows="3"
+          placeholder="Enter message to check for spam"
         />
+      </div>
+      <div className="row">
+        <button onClick={predictNlp}>Check Message</button>
+      </div>
+    </div>
+  );
+}
