@@ -1,186 +1,387 @@
-# **Real-Time Multimodal Financial Fraud Detection System**
+# Real-Time Multimodal Financial Fraud Detection System
 
-A real-time machine learning application designed to detect fraudulent financial transactions using **structured data**, **behaviour‑based features**, **supervised ML**, **anomaly detection**, **Computer Vision (CV)**, and **Natural Language Processing (NLP)** with all of it displayed on a simple **live dashboard** that updates immediately when a suspicious transaction appears.
+A real-time, multimodal machine learning system designed to detect fraudulent financial activity by combining **transaction behaviour**, **document verification (Computer Vision)**, and **communication analysis (NLP)**.
 
-***
+The system processes transactions as they arrive, computes a **unified fraud risk score**, and generates alerts through a live dashboard.
 
-# **Problem Statement**
+---
 
-Fraud is one of the biggest threats in digital payments. Attackers move quickly, often exploiting systems that only analyse transactions after they have already happened. Batch‑processing fraud tools create dangerous delays where fraud may go undetected.
+# Problem Statement
 
-Our aim is to build a system that:
+Fraud in digital payments is increasingly **multi-vector**. Systems that rely only on transaction data or batch processing introduce delays and miss important contextual signals such as:
 
-*   reacts to suspicious transactions **immediately**,
-*   uses beginner‑friendly machine learning techniques,
-*   enriches the analysis with **image** and **text** signals,
-*   and presents everything in a clear, real‑time dashboard.
+* manipulated identity documents
+* phishing or scam communications
+* behavioural anomalies across sessions
 
-This project demonstrates how modern fraud systems combine multiple AI methods to support better decision‑making, even when implemented with simple, accessible tools.
+This project builds a **real-time fraud detection pipeline** that integrates multiple AI components into a single decision system.
 
-***
+---
 
-# ** How the System Works **
+# Project Objective
 
-Think of our system as a digital security guard:
+The system aims to:
 
-### *1. A transaction arrives**
+* detect fraudulent transactions **in real time**
+* use **interpretable, beginner-friendly ML models**
+* incorporate **image (CV) and text (NLP) signals**
+* provide a **live dashboard for monitoring risk**
+* demonstrate **multimodal AI integration in fraud detection**
 
-Our program receives each transaction instantly.
+---
 
-### *2. Behaviour checks**
+# System Overview (Multimodal Design)
 
-The system calculates simple features such as:
+The system combines three independent fraud signals:
 
-*   spending speed,
-*   unusual device,
-*   amount spikes,
-*   new merchant behaviour.
+| Modality           | Function                         | Output                           |
+| ------------------ | -------------------------------- | -------------------------------- |
+| Transaction Models | Behavioural fraud detection      | Fraud probability                |
+| Computer Vision    | Document integrity approximation | Distortion / forgery probability |
+| NLP                | Phishing detection               | Spam probability                 |
 
-### *3. Machine Learning models evaluate fraud risk**
+These outputs are combined into a **single risk score** used for final decision-making.
 
-We use two models:
+---
 
-*   **Supervised ML model** (XGBoost or Logistic Regression)
-*   **Anomaly model** (Isolation Forest)
+# End-to-End Flow (Example)
 
-### *4. CV & NLP add extra clues**
+```text
+Transaction received
+→ Supervised Score = 0.72
+→ Anomaly Score = 0.65
+→ CV Score = 0.20
+→ NLP Score = 0.80
 
-To make it multimodal:
+Final Score = 0.62
+→ Fraud (threshold = 0.6)
+```
 
-*   **CV model**: checks if an uploaded document image looks fake
-*   **NLP model**: checks if text messages look like phishing or scam attempts
+---
 
-These are small models trained on simple datasets.
+# System Architecture
 
-### **5. Risk Score**
+```text
+Incoming Transaction
+        |
+        v
+Feature Engineering
+        |
+        v
++--------------------------------------+
+| Supervised ML Model (S_sup)          |
+| Anomaly Model (S_anom)               |
+| CV Model (S_cv)                     |
+| NLP Model (S_nlp)                   |
++--------------------------------------+
+                    |
+                    v
+         Multimodal Risk Fusion
+                    |
+                    v
+           Alert Engine (FastAPI)
+                    |
+                    v
+         React Dashboard (Live)
+```
 
-The models produce fraud‑risk scores.
+---
 
-### **6. Alert Engine**
+# How the System Works
 
-If a transaction looks suspicious, the backend sends an **instant alert** to the dashboard.
+### 1. Transaction Ingestion
 
-### **7. Real-Time Dashboard**
+Transactions are received via FastAPI endpoints and processed individually.
 
-A small React dashboard shows:
+---
 
-*   incoming transactions,
-*   alerts,
-*   CV/NLP results,
-*   and model scores.
+### 2. Feature Engineering
 
+Behavioural features are derived from transaction data:
 
-***
+* velocity (time between transactions)
+* spending deviation
+* device and IP anomalies
+* merchant interaction patterns
 
-# **Key Features **
+These features are either:
 
-*   Real-time transaction scoring
-*   Supervised ML with Python libraries
-*   Anomaly detection using Isolation Forest
-*   Behaviour and velocity features
-*   Simple CV forgery‑detection model
-*   Basic NLP phishing classifier
-*   Live alerts through a lightweight backend
-*   Clean dashboard built with React
+* provided directly in the dataset, or
+* computed using rolling transaction windows
 
+---
 
-# **Tech Stack **
+### 3. Parallel Model Inference
 
-### **Machine Learning**
+All models operate independently:
 
-*   Python
-*   Pandas, NumPy
-*   Scikit‑learn
-*   XGBoost (optional)
-*   TensorFlow/PyTorch (small CV model)
-*   HuggingFace Transformers (small NLP model)
+* **Supervised Model (XGBoost / Logistic Regression)**
+  Outputs probability: ( S_{sup} )
 
-### **Backend**
+* **Anomaly Detection (Isolation Forest)**
+  Outputs anomaly score: ( S_{anom} )
 
-*   FastAPI 
-*   WebSockets for real-time updates
+* **CV Model (Document Verification)**
+  Detects visual distortions → ( S_{cv} )
 
-### **Frontend**
+* **NLP Model (Phishing Detection)**
+  Classifies scam messages → ( S_{nlp} )
 
-*   React
-*   Recharts / Chart.js
+---
 
-### **Data**
+### 4. Multimodal Risk Fusion
 
-*   IEEE‑CIS (tabular data)
-*   Public small CV datasets (forgery detection)
-*   Public phishing datasets (for NLP)
+[
+Score_{total} = w_1 S_{sup} + w_2 S_{anom} + w_3 S_{cv} + w_4 S_{nlp}
+]
 
-***
+Example weights:
 
-# **Multimodal AI Components**
+* ( w_1 = 0.4 ), ( w_2 = 0.3 ), ( w_3 = 0.2 ), ( w_4 = 0.1 )
 
-## **Computer Vision **
+### Decision Rule
 
-A small CNN model detects basic document/image manipulations.  
-It is trained on a simple open-source dataset with:
+[
+Fraud =
+\begin{cases}
+1 & \text{if } Score_{total} > \tau \
+0 & \text{otherwise}
+\end{cases}
+]
 
-*   resizing
-*   normalization
-*   basic augmentation
+---
 
-Output: a **forgery probability score**.
+# Implementation Mapping
 
-API: `/predict_document`
+| Proposal Component | Implementation               |
+| ------------------ | ---------------------------- |
+| Transaction ML     | `src/transaction/`           |
+| Anomaly Detection  | `src/anomaly/`               |
+| CV Model           | `src/cv/`                    |
+| NLP Model          | `src/nlp/`                   |
+| Risk Fusion        | `src/fusion/risk_scoring.py` |
+| Backend API        | `src/api/main.py`            |
+| Dashboard          | `frontend/`                  |
 
-***
+---
 
-## ** NLP Phishing Detection **
+# Core Fusion Logic (Code)
 
-A small DistilBERT text classifier detects phishing-like messages.
+```python
+# I am combining outputs from all models into a single fraud score
+def compute_risk_score(sup, anom, cv, nlp):
+    
+    # I am assigning weights to each modality
+    w1, w2, w3, w4 = 0.4, 0.3, 0.2, 0.1
+    
+    # I am computing the final weighted score
+    score = (w1 * sup) + (w2 * anom) + (w3 * cv) + (w4 * nlp)
+    
+    return score
 
-*   minimal text cleaning
-*   simple train/val/test split
-*   small dataset
 
-API: `/predict_text`
+# I am defining the classification rule
+def classify_transaction(score, threshold=0.6):
+    
+    # I am comparing score with threshold
+    if score > threshold:
+        return 1
+    else:
+        return 0
+```
 
-***
+---
 
-# **Updated System Architecture **
+# Datasets
 
+### Transaction Data
 
-    Incoming Transaction
-            |
-            v
-    Feature Engineering
-            |
-            +-------------------+
-            |                   |
-    Supervised ML Model     Anomaly Model
-    (XGBoost/LogReg)        (Isolation Forest)
-            |                   |
-            +--------+----------+
-                     |
-                Risk Scoring
-            +--------+---------+
-            |                  |
-     CV Model             NLP Model
-    (Document check)    (Text check)
-            |                  |
-            +---------+--------+
-                      |
-               Alert Engine (FastAPI)
-                      |
-                      v
-            React Dashboard (live updates)
+* Financial Transactions Dataset (Kaggle, ~5M records)
+* Credit Card Fraud Dataset (used for validation)
 
+### Computer Vision
 
+* MIDV-500 / MIDV-2019
+* Synthetic distortions applied to simulate manipulation
 
+### NLP
 
+* SMS Spam Collection Dataset
+* Binary classification: ham vs spam
 
-***
+---
+
+# API Design
+
+### Transaction Prediction
+
+```json
+POST /predict_transaction
+
+Input:
+{
+  "amount": 120.5,
+  "device": "mobile",
+  "location": "UK"
+}
+
+Output:
+{
+  "fraud_score": 0.72,
+  "prediction": 1
+}
+```
+
+---
+
+### Document Prediction
+
+```json
+POST /predict_document
+
+Output:
+{
+  "cv_score": 0.30
+}
+```
+
+---
+
+### Text Prediction
+
+```json
+POST /predict_text
+
+Output:
+{
+  "nlp_score": 0.85
+}
+```
+
+---
+
+### Alerts
+
+* WebSocket endpoint: `/alerts`
+* Streams real-time fraud alerts
+
+---
+
+# Real-Time Processing
+
+* Transactions are processed via API requests
+* Each request triggers model inference
+* Alerts are streamed using WebSockets
+* A sequential loop can simulate streaming input
+
+---
+
+# Evaluation Strategy
+
+### Transaction Models
+
+* Precision, Recall, F1-score
+* ROC-AUC
+* PRAUC, MCC
+
+### CV Model
+
+* Accuracy
+* Confusion matrix
+
+### NLP Model
+
+* Accuracy
+* Precision / Recall
+
+### System-Level
+
+* Latency per request
+* Throughput
+* Alert accuracy
+
+---
+
+# How to Run the Project
+
+### 1. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 2. Run Backend (FastAPI)
+
+```bash
+uvicorn src.api.main:app --reload
+```
+
+---
+
+### 3. Run Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+---
+
+### 4. Access Application
+
+* API: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+* Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+* Frontend: [http://localhost:3000](http://localhost:3000)
+
+---
+
+# Limitations
+
+* Datasets are independent (no shared entity linkage)
+* CV model detects distortions, not real-world forgery
+* Real-time behaviour is simulated rather than deployed at scale
+
+---
+
+# Key Features
+
+* Real-time fraud scoring
+* Hybrid ML (supervised + anomaly detection)
+* Multimodal integration (transaction + CV + NLP)
+* Explainable scoring
+* Modular architecture
+* Live alert system
+
+---
+
+# Tech Stack
+
+### Machine Learning
+
+* Python, Pandas, NumPy
+* Scikit-learn, XGBoost
+* TensorFlow / PyTorch
+* HuggingFace Transformers
+
+### Backend
+
+* FastAPI
+* WebSockets
+
+### Frontend
+
+* React
+* Recharts / Chart.js
+
+---
 
 # Group Members
 
-*   **Aniruddha Ashok Patil**
-*   **Jibola Johnson Odekunle**
-*   **Anderson Lucas Cachinavissa Aurelio**
-*   **Onyinye Eugenia Asadu**
-*   **Gaurav Sanjay Karnavar**
-  
+* Aniruddha Ashok Patil
+* Jibola Johnson Odekunle
+* Anderson Lucas Cachinavissa Aurelio
+* Onyinye Eugenia Asadu
+* Gaurav Sanjay Karnavar
