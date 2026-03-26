@@ -1,0 +1,9 @@
+image_path,label,split
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_3.jpg,1,train
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_4.jpg,1,train
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_6.jpg,1,train
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_7.jpg,1,train
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_2.jpg,1,train
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_5.jpg,1,val
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_0.jpg,1,test
+/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/tmp/cv_smoke/images/image_1.jpg,1,test

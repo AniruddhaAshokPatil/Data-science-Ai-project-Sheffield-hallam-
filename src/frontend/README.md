@@ -8,8 +8,7 @@ A very simple React dashboard that talks to your FastAPI backend.
 - Your backend running at `http://127.0.0.1:8000`
   - Start it from the project root:
     ```bash
-    cd src
-    uvicorn backend.main:app --reload
+    uvicorn src.api.main:app --reload
     ```
 
 ## Quick start

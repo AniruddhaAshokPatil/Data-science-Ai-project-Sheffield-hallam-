@@ -8,10 +8,12 @@ fastapi==0.135.1
 fonttools==4.62.0
 h11==0.16.0
 idna==3.11
+ipykernel==7.1.0
 joblib==1.5.3
 kiwisolver==1.5.0
 matplotlib==3.10.8
-numpy==2.4.3
+numpy==1.26.4
+opencv-python==4.10.0.84
 packaging==26.0
 pandas==3.0.1
 pillow==12.1.1
@@ -25,6 +27,7 @@ seaborn==0.13.2
 six==1.17.0
 starlette==0.52.1
 threadpoolctl==3.6.0
+torch==2.2.2
 typing-inspection==0.4.2
 typing_extensions==4.15.0
 uvicorn==0.41.0
