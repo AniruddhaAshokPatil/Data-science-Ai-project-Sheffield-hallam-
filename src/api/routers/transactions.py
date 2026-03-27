@@ -1,7 +1,8 @@
+from datetime import datetime
+from typing import Dict, Optional
+
 from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import Dict, Optional
-from datetime import datetime
 
 from src.api.risk_scoring import combined_risk
 from src.api.config import cfg
@@ -21,17 +22,9 @@ class TransactionOut(BaseModel):
     timestamp: str
 
 
-@router.post("/predict", response_model=TransactionOut)
-def predict_transaction(payload: TransactionIn):
-    """
-    Beginner-friendly heuristic using two common signals if present:
-    - ratio_to_median_purchase_price
-    - distance_from_home
-
-    If they're missing, we fall back to a simple average of provided features.
-    This is just to keep the API running while your ML models are being built.
-    """
-    x = payload.features
+def score_transaction_features(features: Dict[str, float]) -> TransactionOut:
+    """Shared heuristic scoring for HTTP and WebSocket transaction payloads."""
+    x = features
     # Try to use the two classic fraud signals if available
     ratio = float(x.get("ratio_to_median_purchase_price", 0.0))
     dist = float(x.get("distance_from_home", 0.0))
@@ -62,3 +55,16 @@ def predict_transaction(payload: TransactionIn):
         },
         timestamp=datetime.utcnow().isoformat(),
     )
+
+
+@router.post("/predict", response_model=TransactionOut)
+def predict_transaction(payload: TransactionIn):
+    """
+    Beginner-friendly heuristic using two common signals if present:
+    - ratio_to_median_purchase_price
+    - distance_from_home
+
+    If they're missing, we fall back to a simple average of provided features.
+    This is just to keep the API running while your ML models are being built.
+    """
+    return score_transaction_features(payload.features)

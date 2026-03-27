@@ -1,5 +1,6 @@
 import pandas as pd
-from simulator.simulator_config import cfg
+
+from src.simulator.simulator_config import cfg
 
 
 def load_transactions_from_csv(nrows=100):

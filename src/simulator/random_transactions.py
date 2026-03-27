@@ -1,7 +1,9 @@
 import random
 import time
+
 import requests
-from simulator.simulator_config import cfg
+
+from src.simulator.simulator_config import cfg
 
 
 def generate_random_transaction():

@@ -1,8 +1,10 @@
 import asyncio
-import websockets
 import json
+
 import pandas as pd
-from simulator.simulator_config import cfg
+import websockets
+
+from src.simulator.simulator_config import cfg
 
 
 async def stream_over_websocket(df: pd.DataFrame):

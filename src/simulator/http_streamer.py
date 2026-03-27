@@ -1,7 +1,8 @@
 import time
-import requests
 import pandas as pd
-from simulator.simulator_config import cfg
+import requests
+
+from src.simulator.simulator_config import cfg
 
 
 def stream_over_http(df: pd.DataFrame):
@@ -20,4 +21,3 @@ def stream_over_http(df: pd.DataFrame):
         time.sleep(cfg.delay_seconds)
 
     print("✅ HTTP streaming complete!")
-

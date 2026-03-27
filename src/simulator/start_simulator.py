@@ -1,8 +1,9 @@
 import asyncio
-from simulator.load_csv_streamer import load_transactions_from_csv
-from simulator.http_streamer import stream_over_http
-from simulator.websocket_streamer import stream_over_websocket
-from simulator.random_transactions import stream_random_transactions
+
+from src.simulator.http_streamer import stream_over_http
+from src.simulator.load_csv_streamer import load_transactions_from_csv
+from src.simulator.random_transactions import stream_random_transactions
+from src.simulator.websocket_streamer import stream_over_websocket
 
 
 def start_http():

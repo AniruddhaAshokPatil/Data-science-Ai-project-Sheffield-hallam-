@@ -1,151 +1,229 @@
-import argparse
+# src/train/train_cv_model.py
+
+import os
 import sys
+import logging
+import pickle
+import numpy as np
+import pandas as pd
 from pathlib import Path
 
 import torch
-from torch import nn
+from torch import nn, optim
 from torch.utils.data import DataLoader, random_split
+from torchvision import transforms, models
+
+# -------------------------------
+# STEP 0: Project Path Setup
+# -------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.dataset import CVDataset
-from src.models.simple_cnn import SimpleCNN
-from src.train.model_paths import CV_CNN_MODEL
 
+# -------------------------------
+# STEP 1: Reproducibility
+# -------------------------------
 
-def train_cv_model(
-    csv_path,
-    epochs=5,
-    batch_size=16,
-    learning_rate=1e-3,
-    validation_split=0.2,
-    model_path=CV_CNN_MODEL,
-    image_size=224,
-):
-    csv_columns = None
-    split_series = None
-    try:
-        import pandas as pd
+torch.manual_seed(42)
+np.random.seed(42)
 
-        csv_columns = pd.read_csv(csv_path, nrows=0).columns.tolist()
-        if "split" in csv_columns:
-            split_series = pd.read_csv(csv_path, usecols=["split"])["split"]
-    except Exception:
-        csv_columns = None
-        split_series = None
+# -------------------------------
+# STEP 2: Logging
+# -------------------------------
 
-    if split_series is not None:
-        available_splits = set(split_series.dropna().astype(str).str.lower())
-        eval_split = "val" if "val" in available_splits else "test" if "test" in available_splits else None
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-        if "train" not in available_splits or eval_split is None:
-            raise ValueError("CSV split column exists, but usable train/val or train/test rows were not found.")
+# -------------------------------
+# STEP 3: Device
+# -------------------------------
 
-        train_dataset = CVDataset(csv_path, split="train", image_size=(image_size, image_size))
-        validation_dataset = CVDataset(csv_path, split=eval_split, image_size=(image_size, image_size))
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+logging.info(f"I am using device: {device}")
 
-        if len(train_dataset) == 0 or len(validation_dataset) == 0:
-            raise ValueError("CSV split column exists, but train or evaluation rows are empty.")
+# -------------------------------
+# STEP 4: Transforms
+# -------------------------------
+
+# I am using stronger augmentation for training
+train_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(10),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406],
+                         [0.229, 0.224, 0.225])
+])
+
+# I keep validation clean
+val_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406],
+                         [0.229, 0.224, 0.225])
+])
+
+# -------------------------------
+# STEP 5: Dataset Loader
+# -------------------------------
+
+def load_dataset(csv_path, validation_split=0.2):
+    """
+    I handle both:
+    - CSV with split column
+    - CSV without split column
+    """
+
+    df = pd.read_csv(csv_path)
+
+    if "split" in df.columns:
+        train_df = df[df["split"] == "train"]
+        val_df = df[df["split"].isin(["val", "test"])]
+
+        train_dataset = CVDataset(train_df, transform=train_transform)
+        val_dataset = CVDataset(val_df, transform=val_transform)
+
     else:
-        dataset = CVDataset(csv_path, image_size=(image_size, image_size))
-        if len(dataset) < 2:
-            raise ValueError("The CV dataset must contain at least 2 samples.")
+        full_dataset = CVDataset(df, transform=train_transform)
 
-        validation_size = max(1, int(len(dataset) * validation_split))
-        train_size = len(dataset) - validation_size
-        if train_size == 0:
-            train_size = len(dataset) - 1
-            validation_size = 1
+        val_size = max(1, int(len(full_dataset) * validation_split))
+        train_size = len(full_dataset) - val_size
 
-        train_dataset, validation_dataset = random_split(
-            dataset,
-            [train_size, validation_size],
-            generator=torch.Generator().manual_seed(42),
+        train_dataset, val_dataset = random_split(
+            full_dataset,
+            [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)
         )
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    validation_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=False)
+    return train_dataset, val_dataset
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = SimpleCNN().to(device)
+# -------------------------------
+# STEP 6: Model
+# -------------------------------
+
+def build_model():
+    """
+    I am using ResNet18 with transfer learning
+    """
+
+    model = models.resnet18(weights="DEFAULT")
+
+    # Freeze backbone
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Replace head for binary classification
+    model.fc = nn.Linear(model.fc.in_features, 1)
+
+    return model.to(device)
+
+# -------------------------------
+# STEP 7: Training Function
+# -------------------------------
+
+def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
+
+    train_dataset, val_dataset = load_dataset(csv_path)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size)
+
+    model = build_model()
+
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.fc.parameters(), lr=lr)
+
+    best_val_loss = float("inf")
 
     for epoch in range(epochs):
+
+        # ---------------- TRAIN ----------------
         model.train()
-        running_loss = 0.0
+        train_loss = 0
 
         for images, labels in train_loader:
             images = images.to(device)
-            labels = labels.to(device).view(-1, 1)
+            labels = labels.float().unsqueeze(1).to(device)
 
-            optimizer.zero_grad()
             logits = model(images)
             loss = criterion(logits, labels)
+
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item() * images.size(0)
+            train_loss += loss.item() * images.size(0)
 
-        train_loss = running_loss / len(train_loader.dataset)
+        train_loss /= len(train_loader.dataset)
 
+        # ---------------- VALIDATION ----------------
         model.eval()
-        validation_loss = 0.0
+        val_loss = 0
         correct = 0
         total = 0
 
         with torch.no_grad():
-            for images, labels in validation_loader:
+            for images, labels in val_loader:
                 images = images.to(device)
-                labels = labels.to(device).view(-1, 1)
+                labels = labels.float().unsqueeze(1).to(device)
 
                 logits = model(images)
                 loss = criterion(logits, labels)
-                validation_loss += loss.item() * images.size(0)
 
-                predictions = (torch.sigmoid(logits) >= 0.5).float()
-                correct += (predictions == labels).sum().item()
+                val_loss += loss.item() * images.size(0)
+
+                probs = torch.sigmoid(logits)
+                preds = (probs > 0.5).float()
+
+                correct += (preds == labels).sum().item()
                 total += labels.numel()
 
-        avg_validation_loss = validation_loss / len(validation_loader.dataset)
-        validation_accuracy = correct / total if total else 0.0
+        val_loss /= len(val_loader.dataset)
+        accuracy = correct / total if total else 0
 
-        print(
-            f"Epoch {epoch + 1}/{epochs} "
-            f"- train_loss: {train_loss:.4f} "
-            f"- val_loss: {avg_validation_loss:.4f} "
-            f"- val_acc: {validation_accuracy:.4f}"
+        logging.info(
+            f"Epoch {epoch+1} | "
+            f"Train Loss: {train_loss:.4f} | "
+            f"Val Loss: {val_loss:.4f} | "
+            f"Val Acc: {accuracy:.4f}"
         )
 
-    model_path = Path(model_path)
-    model_path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), model_path)
-    print(f"Saved CV model to: {model_path}")
-    return model_path
+        # I save best model
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            torch.save(model.state_dict(), "models/cv_model.pth")
 
+    # -------------------------------
+    # STEP 8: Save Metadata
+    # -------------------------------
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Train the SimpleCNN CV model.")
-    parser.add_argument("csv_path", help="CSV file with image_path and label columns.")
-    parser.add_argument("--epochs", type=int, default=5)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--learning-rate", type=float, default=1e-3)
-    parser.add_argument("--validation-split", type=float, default=0.2)
-    parser.add_argument("--model-path", default=str(CV_CNN_MODEL))
-    parser.add_argument("--image-size", type=int, default=224)
-    return parser.parse_args()
+    metadata = {
+        "input_size": (224, 224),
+        "threshold": 0.5
+    }
 
+    with open("models/cv_metadata.pkl", "wb") as f:
+        pickle.dump(metadata, f)
+
+    logging.info("I have saved the best CV model and metadata.")
+
+# -------------------------------
+# STEP 9: CLI
+# -------------------------------
 
 if __name__ == "__main__":
-    args = parse_args()
-    train_cv_model(
-        csv_path=args.csv_path,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.learning_rate,
-        validation_split=args.validation_split,
-        model_path=args.model_path,
-        image_size=args.image_size,
-    )
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("csv_path")
+    parser.add_argument("--epochs", type=int, default=5)
+    parser.add_argument("--batch_size", type=int, default=16)
+
+    args = parser.parse_args()
+
+    train(args.csv_path, args.epochs, args.batch_size)
