@@ -44,6 +44,9 @@ export FRAUD_APP_VERSION=1.0.0
 export FRAUD_LOG_LEVEL=INFO
 export FRAUD_HEURISTIC_THRESHOLD=0.65
 export FRAUD_ALLOWED_ORIGINS=https://your-frontend.example.com
+export FRAUD_TRUSTED_HOSTS=your-api.example.com
+export FRAUD_RATE_LIMIT_REQUESTS=120
+export FRAUD_RATE_LIMIT_WINDOW_SECONDS=60
 ```
 
 ### Frontend
@@ -59,6 +62,25 @@ npm run dev
 ```bash
 PYTHONPATH=.venv/lib/python3.11/site-packages python3 -m pytest src/api/tests/test_end_to_end.py tests/test_transaction_scoring.py
 ```
+
+## Health Endpoints
+
+- `GET /health/live`: I use this for simple liveness checks.
+- `GET /health/ready`: I use this for structured readiness checks, including model and artifact availability.
+
+## Container Deployment
+
+```bash
+cp .env.example .env
+cp src/frontend/.env.example src/frontend/.env
+docker compose up --build
+```
+
+The API will be available on `http://localhost:8000` and the frontend on `http://localhost:8080`.
+
+## Release Process
+
+I keep a dedicated release checklist in [RELEASE_CHECKLIST.md](/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/RELEASE_CHECKLIST.md) so deployment and verification steps stay repeatable.
 
 ## Notes
 
