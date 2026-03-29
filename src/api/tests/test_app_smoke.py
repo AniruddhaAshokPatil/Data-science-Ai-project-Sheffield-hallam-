@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 
+from src.api import main as main_module
 from src.api.main import create_app
 
 
@@ -15,6 +16,8 @@ def test_root_exposes_environment_and_version():
     assert "environment" in payload
     assert "version" in payload
     assert "/transaction/predict" in payload["routes"]
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
 
 
 def test_health_route_returns_operational_metadata():
@@ -55,3 +58,24 @@ def test_websocket_ping_returns_pong():
         payload = websocket.receive_json()
 
     assert payload == {"type": "pong"}
+
+
+def test_rate_limiter_blocks_excess_requests():
+    # I tighten the limit in this test because I want to prove the protection
+    # works without needing to send a huge number of requests.
+    original_requests = main_module.cfg.rate_limit_requests
+    original_window = main_module.cfg.rate_limit_window_seconds
+    main_module.cfg.rate_limit_requests = 1
+    main_module.cfg.rate_limit_window_seconds = 60
+
+    try:
+        client = TestClient(create_app())
+        first = client.get("/health/live")
+        second = client.get("/health/live")
+    finally:
+        main_module.cfg.rate_limit_requests = original_requests
+        main_module.cfg.rate_limit_window_seconds = original_window
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.headers["Retry-After"]

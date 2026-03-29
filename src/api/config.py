@@ -30,6 +30,9 @@ class Config(BaseModel):
     log_level: str = "INFO"
     app_version: str = "1.0.0"
     allowed_origins: list[str] = ["*"]
+    trusted_hosts: list[str] = ["*"]
+    rate_limit_requests: int = 120
+    rate_limit_window_seconds: int = 60
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -41,10 +44,18 @@ class Config(BaseModel):
         app_env = os.getenv("FRAUD_APP_ENV", "development")
         log_level = os.getenv("FRAUD_LOG_LEVEL", "INFO").upper()
         app_version = os.getenv("FRAUD_APP_VERSION", "1.0.0")
+        rate_limit_requests = int(os.getenv("FRAUD_RATE_LIMIT_REQUESTS", "120"))
+        rate_limit_window_seconds = int(
+            os.getenv("FRAUD_RATE_LIMIT_WINDOW_SECONDS", "60")
+        )
 
         origins_raw = os.getenv("FRAUD_ALLOWED_ORIGINS", "*")
         allowed_origins = [
             origin.strip() for origin in origins_raw.split(",") if origin.strip()
+        ] or ["*"]
+        trusted_hosts_raw = os.getenv("FRAUD_TRUSTED_HOSTS", "*")
+        trusted_hosts = [
+            host.strip() for host in trusted_hosts_raw.split(",") if host.strip()
         ] or ["*"]
 
         return cls(
@@ -53,6 +64,9 @@ class Config(BaseModel):
             log_level=log_level,
             app_version=app_version,
             allowed_origins=allowed_origins,
+            trusted_hosts=trusted_hosts,
+            rate_limit_requests=rate_limit_requests,
+            rate_limit_window_seconds=rate_limit_window_seconds,
         )
 
 

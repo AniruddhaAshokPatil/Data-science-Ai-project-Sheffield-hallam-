@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
 from src.api.config import cfg
@@ -12,6 +13,7 @@ from src.api.routers.cv import router as cv_router
 from src.api.routers.nlp import router as nlp_router
 from src.api.routers.transactions import score_transaction_features
 from src.api.routers.transactions import router as transactions_router
+from src.api.services.rate_limit import InMemoryRateLimiter
 from src.api.services.readiness import get_readiness_report
 from src.api.websocket_manager import WebSocketManager
 
@@ -46,6 +48,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=cfg.trusted_hosts)
+    limiter = InMemoryRateLimiter(
+        max_requests=cfg.rate_limit_requests,
+        window_seconds=cfg.rate_limit_window_seconds,
+    )
 
     # I include separate routers so each fraud area can stay in its own file
     # while still becoming part of one complete backend application.
@@ -60,10 +67,30 @@ def create_app() -> FastAPI:
         # latency without changing every single route implementation.
         from time import perf_counter
 
+        client_host = request.client.host if request.client else "unknown"
+        allowed, retry_after = limiter.check(client_host)
+        if not allowed:
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests."},
+                headers={"Retry-After": str(retry_after)},
+            )
+
         started_at = perf_counter()
         response = await call_next(request)
         duration = perf_counter() - started_at
         response.headers["X-Process-Time"] = f"{duration:.6f}"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "connect-src 'self' ws: wss: http: https:; "
+            "script-src 'self';"
+        )
         return response
 
     @app.exception_handler(Exception)
