@@ -5,17 +5,28 @@ from pathlib import Path
 
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
+# I keep positive and negative folder-name clues here because this script can
+# infer labels from directory names when a dataset is organized that way.
 POSITIVE_FOLDER_NAMES = {"1", "true", "yes", "positive", "fraud", "fake", "forged", "tampered"}
 NEGATIVE_FOLDER_NAMES = {"0", "false", "no", "negative", "safe", "real", "genuine", "authentic"}
 
 
 def find_images(source_dir):
-    return sorted(
-        path for path in Path(source_dir).rglob("*") if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
-    )
+    # I collect images recursively because CV datasets are often nested across
+    # multiple folders rather than stored in one flat directory.
+    source_path = Path(source_dir)
+    image_paths = []
+    for path in source_path.rglob("*"):
+        is_image_file = path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+        if is_image_file:
+            image_paths.append(path)
+    image_paths.sort()
+    return image_paths
 
 
 def infer_label_from_parent(image_path):
+    # I infer labels from the parent folder name because some image datasets
+    # encode class information directly in the directory structure.
     parent_name = image_path.parent.name.strip().lower()
 
     if parent_name in POSITIVE_FOLDER_NAMES:
@@ -30,6 +41,8 @@ def infer_label_from_parent(image_path):
 
 
 def assign_split(index, total, train_ratio, val_ratio):
+    # I assign split by index so the CSV can include train, val, and test rows
+    # without needing a separate split file.
     if total == 0:
         return "train"
 
@@ -44,26 +57,32 @@ def assign_split(index, total, train_ratio, val_ratio):
 
 
 def build_rows(images, label_mode, constant_label, train_ratio, val_ratio, shuffle, seed):
+    # I build rows in one helper so discovery, labeling, and splitting stay
+    # grouped together before I write the final CSV.
     images = list(images)
     if shuffle:
         random.Random(seed).shuffle(images)
 
     rows = []
     for index, image_path in enumerate(images):
-        label = constant_label if label_mode == "constant" else infer_label_from_parent(image_path)
+        if label_mode == "constant":
+            label = constant_label
+        else:
+            label = infer_label_from_parent(image_path)
         split = assign_split(index, len(images), train_ratio, val_ratio)
-        rows.append(
-            {
-                "image_path": str(image_path.resolve()),
-                "label": int(label),
-                "split": split,
-            }
-        )
+        row = {
+            "image_path": str(image_path.resolve()),
+            "label": int(label),
+            "split": split,
+        }
+        rows.append(row)
 
     return rows
 
 
 def write_csv(rows, output_path):
+    # I write the CSV in one place because later training code depends on a
+    # simple, predictable labels file with these exact columns.
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -74,6 +93,8 @@ def write_csv(rows, output_path):
 
 
 def parse_args():
+    # I use argparse here so I can build CV dataset indexes from different
+    # image folders without editing the script by hand each time.
     parser = argparse.ArgumentParser(description="Build a CSV index for CV training data.")
     parser.add_argument("source_dir", help="Folder containing images or class subfolders.")
     parser.add_argument(
@@ -105,6 +126,7 @@ def parse_args():
 
 
 def main():
+    # I keep main small so the real work stays in reusable helpers.
     args = parse_args()
 
     if args.train_ratio < 0 or args.val_ratio < 0 or args.train_ratio + args.val_ratio > 1:

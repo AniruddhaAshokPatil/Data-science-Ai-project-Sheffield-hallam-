@@ -4,4 +4,7 @@ pydantic
 pandas
 matplotlib
 scikit-learn
-
+numpy
+joblib
+opencv-python
+torch

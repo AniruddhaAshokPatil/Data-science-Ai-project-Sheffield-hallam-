@@ -18,6 +18,8 @@ from torchvision import transforms, models
 # -------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# I add the project root to sys.path so this training script can import the
+# shared dataset class even when I run the file directly from the terminal.
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -43,6 +45,8 @@ logging.basicConfig(
 # STEP 3: Device
 # -------------------------------
 
+# I choose GPU when available because CV training is heavier than many tabular
+# tasks, but I still want the script to work on CPU-only machines too.
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 logging.info(f"I am using device: {device}")
 
@@ -50,7 +54,8 @@ logging.info(f"I am using device: {device}")
 # STEP 4: Transforms
 # -------------------------------
 
-# I am using stronger augmentation for training
+# I use stronger augmentation for training because CV models usually generalize
+# better when they see small random variations of the images.
 train_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.RandomHorizontalFlip(),
@@ -60,7 +65,8 @@ train_transform = transforms.Compose([
                          [0.229, 0.224, 0.225])
 ])
 
-# I keep validation clean
+# I keep validation cleaner because I want evaluation to measure model quality
+# on stable inputs rather than adding extra randomness during validation.
 val_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -79,19 +85,25 @@ def load_dataset(csv_path, validation_split=0.2):
     - CSV without split column
     """
 
+    # I read the labels CSV here because it defines the image paths, labels,
+    # and sometimes the train/test split for the CV dataset.
     df = pd.read_csv(csv_path)
 
     if "split" in df.columns:
         train_df = df[df["split"] == "train"]
-        val_df = df[df["split"].isin(["val", "test"])]
+        validation_mask = df["split"].isin(["val", "test"])
+        val_df = df[validation_mask]
 
         train_dataset = CVDataset(train_df, transform=train_transform)
         val_dataset = CVDataset(val_df, transform=val_transform)
 
     else:
+        # I create one full dataset first when no split column exists, then I
+        # let PyTorch divide it into train and validation subsets.
         full_dataset = CVDataset(df, transform=train_transform)
 
-        val_size = max(1, int(len(full_dataset) * validation_split))
+        dataset_size = len(full_dataset)
+        val_size = max(1, int(dataset_size * validation_split))
         train_size = len(full_dataset) - val_size
 
         train_dataset, val_dataset = random_split(
@@ -111,13 +123,17 @@ def build_model():
     I am using ResNet18 with transfer learning
     """
 
+    # I use ResNet18 because it is a standard beginner-friendly transfer
+    # learning backbone for image classification tasks.
     model = models.resnet18(weights="DEFAULT")
 
-    # Freeze backbone
+    # I freeze the backbone first because transfer learning often works well
+    # when I only retrain the final head on a smaller project dataset.
     for param in model.parameters():
         param.requires_grad = False
 
-    # Replace head for binary classification
+    # I replace the final layer because this project needs one fraud-vs-normal
+    # output instead of the original ImageNet classes.
     model.fc = nn.Linear(model.fc.in_features, 1)
 
     return model.to(device)
@@ -128,6 +144,8 @@ def build_model():
 
 def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
 
+    # I separate dataset loading from training so this function can focus on
+    # optimization logic after the images are prepared.
     train_dataset, val_dataset = load_dataset(csv_path)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -135,6 +153,8 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
 
     model = build_model()
 
+    # I use BCEWithLogitsLoss because this is a binary classification problem
+    # and the model returns one raw logit for each image.
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.fc.parameters(), lr=lr)
 
@@ -157,7 +177,8 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
             loss.backward()
             optimizer.step()
 
-            train_loss += loss.item() * images.size(0)
+            batch_size_now = images.size(0)
+            train_loss += loss.item() * batch_size_now
 
         train_loss /= len(train_loader.dataset)
 
@@ -175,25 +196,29 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
                 logits = model(images)
                 loss = criterion(logits, labels)
 
-                val_loss += loss.item() * images.size(0)
+                batch_size_now = images.size(0)
+                val_loss += loss.item() * batch_size_now
 
                 probs = torch.sigmoid(logits)
                 preds = (probs > 0.5).float()
 
-                correct += (preds == labels).sum().item()
+                batch_correct = (preds == labels).sum().item()
+                correct += batch_correct
                 total += labels.numel()
 
         val_loss /= len(val_loader.dataset)
         accuracy = correct / total if total else 0
 
+        epoch_number = epoch + 1
         logging.info(
-            f"Epoch {epoch+1} | "
+            f"Epoch {epoch_number} | "
             f"Train Loss: {train_loss:.4f} | "
             f"Val Loss: {val_loss:.4f} | "
             f"Val Acc: {accuracy:.4f}"
         )
 
-        # I save best model
+        # I save only the best checkpoint so the final artifact represents the
+        # strongest validation result seen during training.
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             torch.save(model.state_dict(), "models/cv_model.pth")
@@ -202,6 +227,8 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
     # STEP 8: Save Metadata
     # -------------------------------
 
+    # I save simple metadata too because inference code may need the expected
+    # image size and threshold alongside the model weights.
     metadata = {
         "input_size": (224, 224),
         "threshold": 0.5

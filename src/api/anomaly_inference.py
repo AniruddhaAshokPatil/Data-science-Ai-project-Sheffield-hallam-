@@ -2,54 +2,44 @@
 
 import os
 import pickle
-import numpy as np
-import pandas as pd
 import logging
 
-# -------------------------------
-# STEP 0: Logging Setup
-# -------------------------------
+import numpy as np
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-# -------------------------------
-# STEP 1: Model Loader (Controlled)
-# -------------------------------
-
 class AnomalyModel:
-    """
-    I am wrapping everything inside a class so I can:
-    - control loading
-    - validate inputs
-    - reuse safely in APIs
-    """
+    # I wrap the anomaly workflow in a class so the wider fraud project can load once and predict many times.
 
     def __init__(self, model_path="models/"):
+        # I keep these values on the object because loading happens once, but prediction may happen many times.
         self.model_path = model_path
         self.pipeline = None
         self.metadata = None
         self.feature_names = None
 
     def load(self):
-        """
-        I explicitly load model artifacts (NOT at import time)
-        """
+        # I load the artifacts here instead of at import time so this module stays safer to reuse in the API.
         try:
-            with open(os.path.join(self.model_path, "anomaly_pipeline.pkl"), "rb") as f:
-                self.pipeline = pickle.load(f)
+            pipeline_path = os.path.join(self.model_path, "anomaly_pipeline.pkl")
+            metadata_path = os.path.join(self.model_path, "anomaly_metadata.pkl")
 
-            with open(os.path.join(self.model_path, "anomaly_metadata.pkl"), "rb") as f:
-                self.metadata = pickle.load(f)
+            with open(pipeline_path, "rb") as pipeline_file:
+                self.pipeline = pickle.load(pipeline_file)
 
-            # I store calibration parameters
+            with open(metadata_path, "rb") as metadata_file:
+                self.metadata = pickle.load(metadata_file)
+
+            # I save these calibration values because the raw anomaly output is not very readable on its own.
             self.score_min = self.metadata["score_min"]
             self.score_max = self.metadata["score_max"]
             self.threshold = self.metadata["threshold"]
 
-            # Optional: load feature names if saved
+            # I keep the feature list when it exists so prediction can match the training column order.
             self.feature_names = self.metadata.get("features", None)
 
             logging.info("Anomaly model loaded successfully.")
@@ -57,77 +47,47 @@ class AnomalyModel:
         except Exception as e:
             raise RuntimeError(f"Failed to load anomaly model: {e}")
 
-    # -------------------------------
-    # STEP 2: Validation
-    # -------------------------------
-
     def _validate_input(self, X):
-        """
-        I validate input before prediction to prevent silent failures
-        """
-
+        # I validate before prediction because anomaly models are sensitive to missing or misaligned inputs.
         if X is None or len(X) == 0:
             raise ValueError("Input data is empty.")
 
-        # Convert to DataFrame if needed
         if isinstance(X, np.ndarray):
             X = pd.DataFrame(X)
 
-        # Check NaNs
-        if X.isnull().sum().sum() > 0:
+        missing_value_count = X.isnull().sum().sum()
+        if missing_value_count > 0:
             raise ValueError("Input contains missing values.")
 
-        # Align columns if feature names exist
         if self.feature_names is not None:
             missing_cols = set(self.feature_names) - set(X.columns)
             if missing_cols:
                 raise ValueError(f"Missing required features: {missing_cols}")
 
-            # I reorder columns to match training
+            # I reorder columns because the model expects the same feature order used during training.
             X = X[self.feature_names]
 
         return X
 
-    # -------------------------------
-    # STEP 3: Score Calibration
-    # -------------------------------
-
     def _compute_score(self, raw_score):
-        """
-        I convert raw IsolationForest output into [0,1]
-        """
-        scaled = (raw_score - self.score_min) / (
-            self.score_max - self.score_min + 1e-6
-        )
-        return 1 - scaled
-
-    # -------------------------------
-    # STEP 4: Prediction
-    # -------------------------------
+        # I convert the raw anomaly output into a 0 to 1 style score because that is easier for the rest of the project.
+        score_range = self.score_max - self.score_min + 1e-6
+        scaled = (raw_score - self.score_min) / score_range
+        score = 1 - scaled
+        return score
 
     def predict(self, X):
-        """
-        I return:
-        - anomaly score
-        - binary fraud prediction
-        """
-
         if self.pipeline is None:
             raise RuntimeError("Model not loaded. Call .load() first.")
 
-        # I validate and align input
         X = self._validate_input(X)
 
         try:
-            # I compute raw anomaly score
             raw_score = self.pipeline.decision_function(X)
-
-            # I calibrate score to [0,1]
             score = self._compute_score(raw_score)
-
-            # I apply threshold
             prediction = (score > self.threshold).astype(int)
 
+            # I return both forms because some project flows want the score and others want a yes/no decision.
             return score, prediction
 
         except Exception as e:

@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 
 
+# I add the project root to sys.path because this top-level trainer can be run
+# directly, and I still want its imports to work from the project package.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -23,6 +25,8 @@ DEFAULT_ANOMALY_DATASET = "data/processed/transactions/clean_main.csv"
 
 
 def _require_path(path_str, task_name):
+    # I validate task input paths here so each training branch fails early with
+    # a clear message if the expected dataset is missing.
     path = Path(path_str)
     if not path.exists():
         raise FileNotFoundError(f"{task_name} dataset not found at: {path}")
@@ -30,6 +34,8 @@ def _require_path(path_str, task_name):
 
 
 def train_cv(args):
+    # I keep each training task in its own helper so this file can behave like
+    # one unified command center for the whole project.
     from src.train.train_cv_model import train_cv_model
 
     csv_path = _require_path(args.cv_csv, "CV")
@@ -47,6 +53,8 @@ def train_cv(args):
 
 
 def train_nlp(args):
+    # I route NLP training through the project's SMS training helper because
+    # this unified trainer should reuse existing project logic when possible.
     from src.api.smsspamcollection import run_sms_classifier
 
     dataset_path = _require_path(args.nlp_dataset, "NLP")
@@ -62,6 +70,8 @@ def train_nlp(args):
 
 
 def train_tabular(args):
+    # I keep the tabular branch separate because the tabular model uses a
+    # different dataset shape and training function from NLP or CV.
     from src.train.train_tabular_model import train_tabular_fraud_model
 
     dataset_path = _require_path(args.tabular_dataset, "Tabular")
@@ -70,6 +80,8 @@ def train_tabular(args):
 
 
 def train_anomaly(args):
+    # I keep anomaly training separate too because anomaly detection learns
+    # normal behavior differently from supervised fraud classification.
     from src.train.train_anomaly_model import train_anomaly_detector
 
     dataset_path = _require_path(args.anomaly_dataset, "Anomaly")
@@ -78,17 +90,25 @@ def train_anomaly(args):
 
 
 def run_task(task_name, args):
+    # I use a task-to-function mapping so the CLI can choose a training branch
+    # without a long chain of repeated if/elif statements.
     trainers = {
         "cv": train_cv,
         "nlp": train_nlp,
         "tabular": train_tabular,
         "anomaly": train_anomaly,
     }
-    return trainers[task_name](args)
+    selected_trainer = trainers[task_name]
+    result = selected_trainer(args)
+    return result
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Unified trainer for the fraud detection project.")
+    # I expose all major training settings here so I can run one task or all
+    # tasks from the command line without editing Python code each time.
+    parser = argparse.ArgumentParser(
+        description="Unified trainer for the fraud detection project."
+    )
     parser.add_argument(
         "--task",
         choices=["cv", "nlp", "tabular", "anomaly", "all"],
@@ -114,8 +134,13 @@ def parse_args():
 
 
 def main():
+    # I let --task all expand into every training branch because sometimes I
+    # want one command to rebuild multiple artifacts for the whole project.
     args = parse_args()
-    tasks = ["cv", "nlp", "tabular", "anomaly"] if args.task == "all" else [args.task]
+    if args.task == "all":
+        tasks = ["cv", "nlp", "tabular", "anomaly"]
+    else:
+        tasks = [args.task]
 
     successes = []
     failures = []

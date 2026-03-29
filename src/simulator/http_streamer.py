@@ -1,4 +1,5 @@
 import time
+
 import pandas as pd
 import requests
 
@@ -6,18 +7,21 @@ from src.simulator.simulator_config import cfg
 
 
 def stream_over_http(df: pd.DataFrame):
-    print("🚀 Starting HTTP transaction streaming...")
+    # I keep this function focused on HTTP only so the simulator stays easy to reason about.
+    print("Starting HTTP transaction streaming...")
     url = cfg.backend_http
 
     for _, row in df.iterrows():
-        payload = {"features": row.to_dict()}
+        features = row.to_dict()
+        payload = {"features": features}
+
         try:
             response = requests.post(url, json=payload)
-            print("Sent →", payload)
-            print("Received ←", response.json())
+            print("Sent:", payload)
+            print("Received:", response.json())
         except Exception as e:
             print("Error:", e)
 
         time.sleep(cfg.delay_seconds)
 
-    print("✅ HTTP streaming complete!")
+    print("HTTP streaming complete!")

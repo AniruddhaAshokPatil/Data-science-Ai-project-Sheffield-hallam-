@@ -1,15 +1,24 @@
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import pandas as pd
 
+# I add the project root to sys.path so this test file can import project code
+# when I run it directly from the repository without extra environment setup.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from src.data.encode_transactions import encode_transactions
 
 
 class EncodeTransactionsTests(unittest.TestCase):
     def test_encodes_main_and_validation_with_shared_schema_and_metadata(self):
+        # I use a temporary directory here so the test can create input and
+        # output files safely without touching the real project datasets.
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp = Path(tmpdir)
             main_input = tmp / "clean_main.csv"
@@ -18,6 +27,8 @@ class EncodeTransactionsTests(unittest.TestCase):
             validation_output = tmp / "encoded_validation.csv"
             metadata_output = tmp / "encoded_schema.json"
 
+            # I build a small mock "main" dataset here because I want to test
+            # the same column types the real project may contain.
             pd.DataFrame(
                 [
                     {
@@ -49,6 +60,8 @@ class EncodeTransactionsTests(unittest.TestCase):
                 ]
             ).to_csv(main_input, index=False)
 
+            # I build a second mock validation dataset here because the whole
+            # purpose of the encoder is to align both datasets to one schema.
             pd.DataFrame(
                 [
                     {
@@ -68,6 +81,8 @@ class EncodeTransactionsTests(unittest.TestCase):
                 ]
             ).to_csv(validation_input, index=False)
 
+            # I call the real encoder here because this is an integration-style
+            # test for the transaction feature encoding stage.
             result = encode_transactions(
                 main_input=main_input,
                 validation_input=validation_input,
@@ -80,6 +95,8 @@ class EncodeTransactionsTests(unittest.TestCase):
             encoded_validation = pd.read_csv(validation_output)
             metadata = json.loads(metadata_output.read_text())
 
+            # I check schema alignment first because both datasets must end up
+            # with identical feature columns before model training can work.
             self.assertEqual(list(encoded_main.columns), list(encoded_validation.columns))
             self.assertEqual(result["feature_columns"], metadata["feature_columns"])
             self.assertEqual(encoded_main.columns[-1], "is_fraud")

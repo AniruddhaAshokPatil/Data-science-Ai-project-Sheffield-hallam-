@@ -11,5 +11,3 @@ python3 -m pip install -r src/api/requirements.txt
 
 # 3) Start API from the project root
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
-
-chmod +x src/api/start.sh

@@ -1,10 +1,10 @@
 import pandas as pd
 from pathlib import Path
 
-# Simple imports (much easier for beginners)
+# I keep these imports simple because this helper is meant to be readable as a small end-to-end NLP example.
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 import joblib
 
@@ -19,9 +19,7 @@ def run_sms_classifier(
 ):
     """Train and test a simple SMS spam detection model."""
 
-    # ------------------------
-    #  Load Dataset
-    # ------------------------
+    # I build the default path here so this file can run on its own and still find the project dataset.
     if path is None:
         project_root = Path(__file__).resolve().parents[2]
         path = project_root / "data" / "SMSSpamCollection"
@@ -33,37 +31,31 @@ def run_sms_classifier(
         return None
 
     try:
-        df = pd.read_csv(
+        dataframe = pd.read_csv(
             path,
             sep="\t",
             names=["label", "message"],
             encoding="utf-8",
-            on_bad_lines="skip"
+            on_bad_lines="skip",
         )
     except Exception as e:
         print("Could not read dataset:", e)
         return None
 
-    # ------------------------
-    #  Clean Dataset
-    # ------------------------
-    df["label_num"] = df["label"].map({"ham": 0, "spam": 1})
-    df = df.dropna(subset=["label_num"])
+    # I convert the text labels into numbers because the model can train only on numeric targets.
+    dataframe["label_num"] = dataframe["label"].map({"ham": 0, "spam": 1})
+    dataframe = dataframe.dropna(subset=["label_num"])
 
-    # ------------------------
-    #  Train Test Split
-    # ------------------------
+    # I split the messages here so I can test the model on messages it did not train on.
     X_train, X_test, y_train, y_test = train_test_split(
-        df["message"],
-        df["label_num"],
+        dataframe["message"],
+        dataframe["label_num"],
         test_size=test_size,
         random_state=random_state,
-        stratify=df["label_num"]
+        stratify=dataframe["label_num"],
     )
 
-    # ------------------------
-    #  Vectorizer + Naive Bayes
-    # ------------------------
+    # I use CountVectorizer because raw words must be turned into numbers before Naive Bayes can learn from them.
     vectorizer = CountVectorizer()
     X_train_vec = vectorizer.fit_transform(X_train)
     X_test_vec = vectorizer.transform(X_test)
@@ -71,9 +63,7 @@ def run_sms_classifier(
     model = MultinomialNB()
     model.fit(X_train_vec, y_train)
 
-    # ------------------------
-    #  Evaluation
-    # ------------------------
+    # I predict on the test split so I can see whether the model generalizes beyond the training rows.
     predictions = model.predict(X_test_vec)
 
     if verbose:
@@ -82,9 +72,7 @@ def run_sms_classifier(
         print("Confusion Matrix:")
         print(confusion_matrix(y_test, predictions))
 
-    # ------------------------
-    #  Test Message
-    # ------------------------
+    # I keep one sample message here so this file can prove the NLP branch works by itself.
     if test_message is None:
         test_message = "URGENT: Your bank account is locked. Click http://fake.com"
 
@@ -97,20 +85,19 @@ def run_sms_classifier(
         print("\nTest Message:", test_message)
         print("Prediction:", verdict)
 
-    # ------------------------
-    #  Save Model
-    # ------------------------
+    # I save the model together with the vectorizer because later predictions need the same word mapping.
     if save_dir:
-        save_dir = Path(save_dir)
-        save_dir.mkdir(parents=True, exist_ok=True)
-        joblib.dump(model, save_dir / "sms_model.joblib")
-        joblib.dump(vectorizer, save_dir / "sms_vectorizer.joblib")
+        save_folder = Path(save_dir)
+        save_folder.mkdir(parents=True, exist_ok=True)
+        joblib.dump(model, save_folder / "sms_model.joblib")
+        joblib.dump(vectorizer, save_folder / "sms_vectorizer.joblib")
 
-    return {
+    result = {
         "verdict": verdict,
         "model": model,
-        "vectorizer": vectorizer
+        "vectorizer": vectorizer,
     }
+    return result
 
 
 if __name__ == "__main__":

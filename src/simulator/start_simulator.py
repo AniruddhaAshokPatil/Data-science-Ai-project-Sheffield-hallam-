@@ -7,16 +7,19 @@ from src.simulator.websocket_streamer import stream_over_websocket
 
 
 def start_http():
-    df = load_transactions_from_csv(50)
-    stream_over_http(df)
+    # I load the sample rows in this wrapper so each mode keeps its own clear entry point.
+    dataframe = load_transactions_from_csv(50)
+    stream_over_http(dataframe)
 
 
 def start_ws():
-    df = load_transactions_from_csv(50)
-    asyncio.run(stream_over_websocket(df))
+    # I call asyncio.run here because the WebSocket streamer is async but this menu file is synchronous.
+    dataframe = load_transactions_from_csv(50)
+    asyncio.run(stream_over_websocket(dataframe))
 
 
 def start_random():
+    # I keep the random mode separate because it is useful when I want a quick demo without CSV data.
     stream_random_transactions(30)
 
 
@@ -26,13 +29,13 @@ if __name__ == "__main__":
     print("2) WebSocket streaming")
     print("3) Random transactions\n")
 
-    choice = input("Choose a mode (1/2/3): ")
+    user_choice = input("Choose a mode (1/2/3): ")
 
-    if choice == "1":
+    if user_choice == "1":
         start_http()
-    elif choice == "2":
+    elif user_choice == "2":
         start_ws()
-    elif choice == "3":
+    elif user_choice == "3":
         start_random()
     else:
         print("Invalid choice.")

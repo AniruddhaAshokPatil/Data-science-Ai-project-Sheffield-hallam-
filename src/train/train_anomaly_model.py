@@ -1,146 +1,110 @@
-# src/train/train_anomaly_model.py
-
 import os
-import pandas as pd
-import numpy as np
 import logging
 import pickle
 
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-
-# -------------------------------
-# STEP 0: Reproducibility
-# -------------------------------
+from sklearn.preprocessing import StandardScaler
 
 # I am fixing randomness so results are consistent every time I run
 np.random.seed(42)
 
-# -------------------------------
-# STEP 1: Logging
-# -------------------------------
-
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
-# -------------------------------
-# STEP 2: Paths
-# -------------------------------
-
+# I keep training paths together here because this file is the anomaly-model
+# stage of the wider fraud training pipeline.
 INPUT_PATH = "data/processed/transactions/"
 MODEL_PATH = "models/"
 
 os.makedirs(MODEL_PATH, exist_ok=True)
 
-# -------------------------------
-# STEP 3: Load Data
-# -------------------------------
-
 logging.info("I am loading datasets...")
 
-X_train = pd.read_csv(INPUT_PATH + "X_train.csv")
-y_train = pd.read_csv(INPUT_PATH + "y_train.csv").values.ravel()
+# I load only the training split here because anomaly training should learn
+# what normal behavior looks like before I score suspicious behavior.
+X_train_path = INPUT_PATH + "X_train.csv"
+y_train_path = INPUT_PATH + "y_train.csv"
 
-# -------------------------------
-# STEP 4: Validation
-# -------------------------------
+X_train = pd.read_csv(X_train_path)
+y_train_frame = pd.read_csv(y_train_path)
+y_train = y_train_frame.values.ravel()
 
-# I am ensuring there are no missing values
-if X_train.isnull().sum().sum() > 0:
+missing_value_count = X_train.isnull().sum().sum()
+if missing_value_count > 0:
     raise ValueError("I found missing values in training data")
 
-# -------------------------------
-# STEP 5: Train ONLY on Normal Data
-# -------------------------------
-
-# I am selecting only legitimate transactions
+# I train on legitimate transactions only because anomaly detection is meant
+# to learn the normal pattern and then flag deviations from it.
 X_train_normal = X_train[y_train == 0]
 
 logging.info(f"I am training on {len(X_train_normal)} normal samples")
 
-# -------------------------------
-# STEP 6: Build Pipeline
-# -------------------------------
+# I use a pipeline here so feature scaling and the anomaly model stay linked
+# together when I later save and reuse them.
+anomaly_model = IsolationForest(
+    n_estimators=200,
+    contamination="auto",
+    random_state=42,
+    n_jobs=-1,
+)
 
-# I am combining scaling + model to avoid mismatch in production
-pipeline = Pipeline([
+pipeline_steps = [
     ("scaler", StandardScaler()),
-    ("model", IsolationForest(
-        n_estimators=200,
-        contamination="auto",  # I let model infer anomaly proportion
-        random_state=42,
-        n_jobs=-1
-    ))
-])
-
-# -------------------------------
-# STEP 7: Train Model
-# -------------------------------
+    ("model", anomaly_model),
+]
+pipeline = Pipeline(pipeline_steps)
 
 logging.info("I am training anomaly model...")
 
 pipeline.fit(X_train_normal)
 
-# -------------------------------
-# STEP 8: Generate TRAIN Scores (IMPORTANT)
-# -------------------------------
-
 # I am using ONLY training data to define score distribution
+# I use decision_function on training-normal data because I need a reference
+# score distribution before I can calibrate anomaly scores for inference.
 train_scores = pipeline.decision_function(X_train_normal)
 
-# -------------------------------
-# STEP 9: Build Score Calibrator
-# -------------------------------
-
-# I am computing min/max from TRAIN (not test!)
 score_min = train_scores.min()
 score_max = train_scores.max()
 
 logging.info(f"Score range (train): {score_min:.4f} → {score_max:.4f}")
 
-# -------------------------------
-# STEP 10: Define Scoring Function
-# -------------------------------
-
-# I am defining a reusable function for inference
+# I define the score conversion here so the raw IsolationForest output can be
+# turned into a clearer fraud-like score between 0 and 1.
 def compute_anomaly_score(raw_score, min_val, max_val):
     """
     I convert raw IsolationForest output into [0,1] fraud score
     """
-    scaled = (raw_score - min_val) / (max_val - min_val + 1e-6)
-    return 1 - scaled  # higher = more anomalous
+    score_range = max_val - min_val + 1e-6
+    scaled = (raw_score - min_val) / score_range
+    anomaly_score = 1 - scaled
+    return anomaly_score
 
-# -------------------------------
-# STEP 11: Define Threshold
-# -------------------------------
-
-# I am using percentile-based threshold (robust for anomaly detection)
-threshold = np.percentile(
-    compute_anomaly_score(train_scores, score_min, score_max),
-    95  # top 5% most anomalous
-)
+# I use a percentile threshold because anomaly detection often depends on the
+# tail of the score distribution rather than a fixed class boundary.
+calibrated_train_scores = compute_anomaly_score(train_scores, score_min, score_max)
+threshold = np.percentile(calibrated_train_scores, 95)
 
 logging.info(f"Anomaly threshold set at: {threshold:.4f}")
 
-# -------------------------------
-# STEP 12: Save Artifacts
-# -------------------------------
+# I save the full pipeline because inference needs both scaling and the model.
+pipeline_output_path = MODEL_PATH + "anomaly_pipeline.pkl"
+with open(pipeline_output_path, "wb") as pipeline_file:
+    pickle.dump(pipeline, pipeline_file)
 
-# I am saving full pipeline (scaler + model)
-with open(MODEL_PATH + "anomaly_pipeline.pkl", "wb") as f:
-    pickle.dump(pipeline, f)
-
-# I am saving calibration + threshold
+# I save calibration information because inference needs the same score conversion later.
 metadata = {
     "score_min": float(score_min),
     "score_max": float(score_max),
-    "threshold": float(threshold)
+    "threshold": float(threshold),
 }
 
-with open(MODEL_PATH + "anomaly_metadata.pkl", "wb") as f:
-    pickle.dump(metadata, f)
+metadata_output_path = MODEL_PATH + "anomaly_metadata.pkl"
+with open(metadata_output_path, "wb") as metadata_file:
+    pickle.dump(metadata, metadata_file)
 
 logging.info("I have saved anomaly pipeline and metadata successfully.")

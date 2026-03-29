@@ -1,16 +1,18 @@
 from pathlib import Path
 
+
 class SimConfig:
-    # Connect to your backend
+    # I store the backend addresses here so every simulator file can import one shared config.
     backend_http = "http://127.0.0.1:8000/transaction/predict"
     backend_ws = "ws://127.0.0.1:8000/ws/transactions"
 
-    # Project & Data paths
+    # I build paths from this file location so the simulator still works when the project is moved.
     project_root = Path(__file__).resolve().parents[2]
     data_dir = project_root / "data"
     card_csv = data_dir / "card_transdata.csv"
 
-    # Speed of simulation
-    delay_seconds = 0.5  # send one transaction every 0.5 sec
+    # I keep the delay in config so I can slow down or speed up the demo without editing logic files.
+    delay_seconds = 0.5
+
 
 cfg = SimConfig()

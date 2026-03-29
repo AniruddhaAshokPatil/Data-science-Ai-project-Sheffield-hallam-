@@ -1,7 +1,7 @@
 import pandas as pd
 
 # 1. SETTING MY FILE PATHS
-# I am saving your specific paths here so I can find my files easily
+# I am saving these project paths here so this small profiling script knows where to read data from.
 card_data_path = '/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/data/card_transdata.csv'
 financial_data_path = '/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/data/financial_fraud_detection_dataset 2.csv'
 
@@ -9,7 +9,7 @@ financial_data_path = '/Users/productguru/Documents/GitHub/Data-science-Ai-proje
 # I wrote this function so I can reuse it for any column in any dataset
 def find_my_outliers(file_path, column_name, dataset_nickname):
     print(f"--- I am now analyzing the {dataset_nickname} ---")
-    
+
     # I am loading 10,000 rows to keep my testing fast and stable
     try:
         df = pd.read_csv(file_path, nrows=10000)
@@ -26,18 +26,20 @@ def find_my_outliers(file_path, column_name, dataset_nickname):
     lower_limit = average - (3 * variation)
 
     # I am creating a sub-list of only the transactions that crossed my limits
-    my_outliers = df[(df[column_name] > upper_limit) | (df[column_name] < lower_limit)]
+    is_above_upper_limit = df[column_name] > upper_limit
+    is_below_lower_limit = df[column_name] < lower_limit
+    my_outliers = df[is_above_upper_limit | is_below_lower_limit]
 
     # 3. PRINTING MY RESULTS
     print(f"I'm checking the column: '{column_name}'")
     print(f"The average is {average:.2f}. Anything above {upper_limit:.2f} is an outlier.")
     print(f"I detected {len(my_outliers)} outliers in this sample.")
-    
+
     # If I found any outliers, I want to see the first 3 rows to study them
     if len(my_outliers) > 0:
         print("A quick look at my flagged transactions:")
         print(my_outliers.head(3))
-    
+
     print("-" * 50)
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ logging.basicConfig(
 # STEP 2: Paths
 # -------------------------------
 
+# I keep training input and output paths near the top because this file is one
+# complete training stage in the fraud pipeline.
 INPUT_PATH = "data/processed/transactions/"
 MODEL_PATH = "models/"
 
@@ -46,6 +48,8 @@ os.makedirs(MODEL_PATH, exist_ok=True)
 
 logging.info("I am loading datasets...")
 
+# I load the split files here because earlier data scripts already prepared
+# train and test sets for the fraud model to learn from.
 X_train = pd.read_csv(INPUT_PATH + "X_train.csv")
 X_test = pd.read_csv(INPUT_PATH + "X_test.csv")
 y_train = pd.read_csv(INPUT_PATH + "y_train.csv").values.ravel()
@@ -71,7 +75,8 @@ logging.info(f"Fraud rate: {np.mean(y_train):.4f}")
 # STEP 5: Build Pipeline
 # -------------------------------
 
-# I am combining scaling + model to avoid inference mismatch
+# I combine scaling and the model in one pipeline so preprocessing at training
+# and inference time stays consistent.
 pipeline = Pipeline([
     ("scaler", StandardScaler()),
     ("model", LogisticRegression(
@@ -79,7 +84,7 @@ pipeline = Pipeline([
         max_iter=300,
         random_state=42,
         n_jobs=-1
-    ))
+    )),
 ])
 
 # -------------------------------
@@ -94,7 +99,10 @@ pipeline.fit(X_train, y_train)
 # STEP 7: Predict Probabilities
 # -------------------------------
 
-y_proba = pipeline.predict_proba(X_test)[:, 1]
+# I use probabilities instead of hard classes first because fraud decisions
+# usually need threshold tuning rather than one fixed default boundary.
+predicted_probabilities = pipeline.predict_proba(X_test)
+y_proba = predicted_probabilities[:, 1]
 
 # -------------------------------
 # STEP 8: Evaluation
@@ -112,8 +120,11 @@ logging.info(f"PR-AUC: {pr_auc:.4f}")
 
 precision, recall, thresholds = precision_recall_curve(y_test, y_proba)
 
-# I am selecting threshold that maximises F1-like balance
-f1_scores = (2 * precision * recall) / (precision + recall + 1e-6)
+# I tune the threshold from precision and recall because fraud work often cares
+# about the balance between catching fraud and avoiding false alarms.
+numerator = 2 * precision * recall
+denominator = precision + recall + 1e-6
+f1_scores = numerator / denominator
 best_idx = np.argmax(f1_scores)
 best_threshold = thresholds[best_idx]
 
@@ -129,17 +140,18 @@ print(classification_report(y_test, y_pred))
 # STEP 10: Save Artifacts
 # -------------------------------
 
-# I am saving full pipeline (IMPORTANT)
+# I save the full pipeline, not only the raw model, because the scaler is part
+# of the learned workflow and must travel with the model artifact.
 with open(MODEL_PATH + "fraud_pipeline.pkl", "wb") as f:
     pickle.dump(pipeline, f)
 
-# I am saving metadata for traceability
-metadata = {
-    "features": list(X_train.columns),
-    "roc_auc": roc,
-    "pr_auc": pr_auc,
-    "threshold": float(best_threshold)
-}
+# I save metadata too because it helps the wider project know what threshold,
+# metrics, and feature layout belonged to this training run.
+metadata = {}
+metadata["features"] = list(X_train.columns)
+metadata["roc_auc"] = roc
+metadata["pr_auc"] = pr_auc
+metadata["threshold"] = float(best_threshold)
 
 with open(MODEL_PATH + "model_metadata.pkl", "wb") as f:
     pickle.dump(metadata, f)

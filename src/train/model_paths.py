@@ -1,8 +1,9 @@
 from pathlib import Path
 
-# This file centralizes model save locations
-ml_dir = Path(__file__).resolve().parent
-artifacts_dir = ml_dir / "artifacts"
+# I centralize model save locations in one file so the training, loading, and
+# API code all agree on where artifacts belong.
+train_dir = Path(__file__).resolve().parent
+artifacts_dir = train_dir / "artifacts"
 artifacts_dir.mkdir(exist_ok=True)
 
 TABULAR_MODEL = artifacts_dir / "tabular_fraud_model.joblib"

@@ -6,19 +6,22 @@
 import os
 import shutil
 
-# I am defining where the raw dataset is located
+# I define the raw dataset folder here because this script flattens a deeply
+# nested MIDV500 structure into one simpler image folder.
 SOURCE_DIR = "data/raw/cv/midv500"
 
-# I am defining where cleaned images will go
+# I keep a separate destination because I want a simpler training-friendly copy
+# without changing the original raw dataset.
 DEST_DIR = "data/raw/cv/midv500/images"
 
-# I am limiting number of images to avoid overload
+# I cap the number of images so this helper can create a manageable subset for
+# experiments instead of trying to copy everything at once.
 MAX_IMAGES = 3000
 
 # I am creating destination folder if it does not exist
 os.makedirs(DEST_DIR, exist_ok=True)
 
-# I am setting counter for renaming images
+# I use a counter so the flattened images get clean, consistent file names.
 image_counter = 0
 
 # I am walking through all folders in dataset
@@ -28,7 +31,8 @@ for root, dirs, files in os.walk(SOURCE_DIR):
     for file in files:
 
         # I am selecting only image files
-        if file.lower().endswith((".jpg", ".jpeg", ".png")):
+        is_image_file = file.lower().endswith((".jpg", ".jpeg", ".png"))
+        if is_image_file:
 
             # I stop if I reach max limit
             if image_counter >= MAX_IMAGES:
@@ -37,7 +41,8 @@ for root, dirs, files in os.walk(SOURCE_DIR):
             # I am building full file path
             source_path = os.path.join(root, file)
 
-            # I am creating new clean filename
+            # I create a new sequential filename so later scripts do not depend
+            # on the original nested folder names.
             new_filename = f"img_{image_counter:05d}.jpg"
             dest_path = os.path.join(DEST_DIR, new_filename)
 
@@ -52,4 +57,4 @@ for root, dirs, files in os.walk(SOURCE_DIR):
         break
 
 # I print total images copied
-print(f"✅ Done. Total images copied: {image_counter}")
+print(f"Done. Total images copied: {image_counter}")

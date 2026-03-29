@@ -1,7 +1,8 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 export default function RiskChart() {
-  // Dummy data
+  // I keep temporary dummy data here because this component is still a UI
+  // placeholder for a future live risk trend chart.
   const data = [
     { timestamp: '10:00', risk: 0.1 },
     { timestamp: '10:05', risk: 0.85 },

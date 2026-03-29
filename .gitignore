@@ -1,4 +1,22 @@
-data/*.csv
-data/*.csv
-data/*.csv
+# I ignore data directories and generated outputs here because this project
+# creates many local artifacts that should not be committed by accident.
 data/
+node_modules/
+dist/
+tmp/
+venv/
+.venv/
+venv_windows_backup/
+# I ignore Python cache and coverage files because they are generated during
+# development and testing, not written as source code.
+__pycache__/
+*.py[cod]
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.env
+.env.local
+src/frontend/.env
+src/frontend/.env.local

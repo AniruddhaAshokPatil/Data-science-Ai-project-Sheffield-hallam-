@@ -1,5 +1,8 @@
 # Real-Time Multimodal Financial Fraud Detection System
 
+<!-- I use this document as the high-level project explanation, so it focuses
+     on the system idea, the architecture, and how the modalities connect. -->
+
 A real-time, multimodal machine learning system designed to detect fraudulent financial activity by combining **transaction behaviour**, **document verification (Computer Vision)**, and **communication analysis (NLP)**.
 
 The system processes transactions as they arrive, computes a **unified fraud risk score**, and generates alerts through a live dashboard.
