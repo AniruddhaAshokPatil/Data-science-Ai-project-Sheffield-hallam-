@@ -77,7 +77,9 @@ export default function useWebSocket(url) {
       }
       try {
         wsRef.current?.close();
-      } catch {}
+      } catch {
+        setStatus('closed');
+      }
     };
   }, [url]);
 

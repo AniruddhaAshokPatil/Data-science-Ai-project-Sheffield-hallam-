@@ -3,7 +3,7 @@ import { useState } from 'react';
 export default function AlertPanel() {
   // I keep alerts in state here because this component is meant to represent
   // a list that could later grow or update as new fraud warnings arrive.
-  const [alerts, setAlerts] = useState([
+  const [alerts] = useState([
     { id: 102, message: 'High-risk transaction detected!' }
   ]);
 

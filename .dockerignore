@@ -14,3 +14,10 @@ htmlcov/
 docs/
 notebooks/
 *.ipynb
+data/
+SMSSpamCollection
+models/
+src/train/artifacts/
+*.pth
+*.joblib
+*.pkl

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function TransactionTable() {
   // I keep dummy state here because this component looks like an earlier
   // prototype version of the transaction table UI.
-  const [transactions, setTransactions] = useState([
+  const [transactions] = useState([
     { id: 101, amount: 250, risk: 0.1 },
     { id: 102, amount: 1200, risk: 0.85 },
     { id: 103, amount: 60, risk: 0.05 }
