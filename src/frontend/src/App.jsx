@@ -3,27 +3,68 @@ import Header from './components/Header.jsx';
 import LiveTable from './components/LiveTable.jsx';
 import Controls from './components/Controls.jsx';
 import RiskBadge from './components/RiskBadge.jsx';
+import SystemStatus from './components/SystemStatus.jsx';
 import useWebSocket from './hooks/useWebSocket.js';
 import { api } from './services/api.js';
 
+function getWebSocketUrl() {
+  // I derive the live URL from the current page by default so deployed builds
+  // can connect without hardcoding localhost-specific values.
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL;
+  }
+
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws/transactions`;
+}
+
 export default function App() {
+  // I keep transactions in state because the dashboard needs to re-render
+  // whenever new scored transactions arrive from HTTP or WebSocket flows.
   const [transactions, setTransactions] = useState([]);
   const [wsConnected, setWsConnected] = useState(false);
+  const [readiness, setReadiness] = useState(null);
+  const [readinessLoading, setReadinessLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
+  const [notice, setNotice] = useState('');
 
   // WebSocket listener: pushes incoming messages to the live table
-  const { status, lastMessage } = useWebSocket(import.meta.env.VITE_WS_URL);
+  const { status, lastMessage, lastError } = useWebSocket(getWebSocketUrl());
+
+  async function loadReadiness() {
+    setReadinessLoading(true);
+    try {
+      const payload = await api.get('/health/ready');
+      setReadiness(payload);
+      setApiError('');
+    } catch (error) {
+      setApiError(error.message);
+    } finally {
+      setReadinessLoading(false);
+    }
+  }
 
   useEffect(() => {
+    // I mirror the hook status into a simpler boolean because the Header only
+    // needs to know whether the socket is connected or not.
     setWsConnected(status === 'open');
   }, [status]);
 
   useEffect(() => {
+    loadReadiness();
+  }, []);
+
+  useEffect(() => {
     if (!lastMessage) return;
 
-    // Expecting messages shaped like:
-    // { risk: number, details: {...}, timestamp: "..." , ... }
+    // I parse the incoming WebSocket message here because the dashboard stores
+    // transaction results as JavaScript objects, not raw socket events.
     try {
-      const parsed = JSON.parse(lastMessage.data || lastMessage);
+      const parsed = typeof lastMessage === 'string' ? JSON.parse(lastMessage) : lastMessage;
       setTransactions((prev) => [parsed, ...prev].slice(0, 500));
     } catch {
       // If backend already sent JSON (not string), accept it as-is
@@ -33,7 +74,14 @@ export default function App() {
     }
   }, [lastMessage]);
 
-  // Counters
+  useEffect(() => {
+    if (lastError) {
+      setApiError(lastError);
+    }
+  }, [lastError]);
+
+  // I derive summary numbers from the transaction list so the badges always
+  // stay in sync with the live table without storing duplicate state.
   const summary = useMemo(() => {
     const total = transactions.length;
     const highRisk = transactions.filter((t) => (t?.risk ?? 0) >= 0.65).length;
@@ -41,26 +89,33 @@ export default function App() {
     return { total, highRisk, avgRisk: Number(avgRisk.toFixed(3)) };
   }, [transactions]);
 
-  // Manual test: call /transaction/predict with a small feature dict
-  async function testOne() {
-    const payload = {
-      features: {
-        ratio_to_median_purchase_price: 3.2,
-        distance_from_home: 420,
-        transaction_amount: 500.5
-      }
-    };
-    const res = await api.post('/transaction/predict', payload);
-    // Push into the table for visibility
-    setTransactions((prev) => [res, ...prev].slice(0, 500));
+  // I keep one helper for transaction submission so Controls can trigger a
+  // backend score request and the dashboard can store the returned result.
+  async function sendTransaction(payload) {
+    try {
+      const res = await api.post('/transaction/predict', payload);
+      setTransactions((prev) => [res, ...prev].slice(0, 500));
+      setApiError('');
+      return res;
+    } catch (error) {
+      setApiError(error.message);
+      throw error;
+    }
   }
 
   return (
     <div className="layout">
-      <Header wsConnected={wsConnected} />
+      <Header wsConnected={wsConnected} apiStatus={readiness?.status} />
 
       <main className="content">
         <section className="left">
+          <SystemStatus
+            readiness={readiness}
+            isLoading={readinessLoading}
+            error={apiError}
+            onRefresh={loadReadiness}
+          />
+
           <div className="panel">
             <div className="panel-header">
               <h2>Live Transactions</h2>
@@ -70,6 +125,7 @@ export default function App() {
                 <RiskBadge label="Avg Risk" value={summary.avgRisk} color="#22c55e" />
               </div>
             </div>
+            {notice ? <p className="feedback success">{notice}</p> : null}
             <LiveTable rows={transactions} />
           </div>
         </section>
@@ -79,11 +135,15 @@ export default function App() {
             <div className="panel-header">
               <h2>Controls</h2>
             </div>
-            <Controls onTestOne={testOne} />
+            <Controls
+              onSubmitTransaction={sendTransaction}
+              onNotify={setNotice}
+              onError={setApiError}
+              onRefreshReadiness={loadReadiness}
+            />
           </div>
         </section>
       </main>
     </div>
   );
 }
-

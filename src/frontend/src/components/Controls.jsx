@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { api } from '../services/api.js';
 
-export default function Controls({ onTestOne }) {
+export default function Controls({ onSubmitTransaction, onNotify, onError, onRefreshReadiness }) {
+  // I keep each form input in its own state value because I want the dashboard
+  // controls to behave like controlled React inputs.
   const [ratio, setRatio] = useState(3.2);
   const [dist, setDist] = useState(420);
   const [amount, setAmount] = useState(500.5);
@@ -11,8 +13,11 @@ export default function Controls({ onTestOne }) {
   );
 
   const [vizPath, setVizPath] = useState('');
+  const [busyAction, setBusyAction] = useState('');
 
   async function predictTransaction() {
+    // I build the payload explicitly here so it matches the backend transaction
+    // route schema instead of relying on form field names by accident.
     const payload = {
       features: {
         ratio_to_median_purchase_price: Number(ratio),
@@ -20,31 +25,60 @@ export default function Controls({ onTestOne }) {
         transaction_amount: Number(amount)
       }
     };
-    const res = await api.post('/transaction/predict', payload);
-    // Surface a tiny confirmation; the App will also push it into the table if onTestOne provided
-    alert(`Transaction risk: ${Number(res.risk).toFixed(3)}`);
-    if (onTestOne) onTestOne(); // optional: trigger a refresh insert
+    setBusyAction('transaction');
+    try {
+      const res = onSubmitTransaction
+        ? await onSubmitTransaction(payload)
+        : await api.post('/transaction/predict', payload);
+      onNotify?.(`I scored the transaction at risk ${Number(res.risk).toFixed(3)}.`);
+    } catch (error) {
+      onError?.(error.message);
+    } finally {
+      setBusyAction('');
+    }
   }
 
   async function predictNlp() {
-    const res = await api.post('/nlp/predict', { message: nlpText });
-    if (!res.ready) {
-      alert(res.message || 'NLP model not available.');
-      return;
+    // I call the NLP route directly here because this panel lets me test the
+    // spam-detection part of the project from the frontend.
+    setBusyAction('nlp');
+    try {
+      const res = await api.post('/nlp/predict', { message: nlpText });
+      if (!res.ready) {
+        onError?.(res.message || 'NLP model not available.');
+        onRefreshReadiness?.();
+        return;
+      }
+      onNotify?.(`I classified the message as ${res.verdict}.`);
+    } catch (error) {
+      onError?.(error.message);
+    } finally {
+      setBusyAction('');
     }
-    alert(`NLP verdict: ${res.verdict}`);
   }
 
   async function visualize() {
-    const res = await api.post('/analytics/visualize', {
-      path: vizPath || undefined,
-      show_plot: false
-    });
-    alert(`Chart saved to: ${res.saved_to}`);
+    // I call the analytics route here because the frontend should be able to
+    // trigger backend chart generation without leaving the dashboard.
+    setBusyAction('visualize');
+    try {
+      const res = await api.post('/analytics/visualize', {
+        path: vizPath || undefined,
+        show_plot: false
+      });
+      onNotify?.(`I saved the analytics chart to ${res.saved_to}.`);
+      onRefreshReadiness?.();
+    } catch (error) {
+      onError?.(error.message);
+    } finally {
+      setBusyAction('');
+    }
   }
 
   return (
     <div className="controls">
+      {/* I group controls by feature area so transaction scoring, analytics,
+          and NLP testing each feel like separate dashboard actions. */}
       <div className="row">
         <strong>▶ Quick Transaction Test</strong>
       </div>
@@ -63,7 +97,9 @@ export default function Controls({ onTestOne }) {
         <input type="number" step="0.1" value={amount} onChange={(e) => setAmount(e.target.value)} />
       </div>
       <div className="row">
-        <button onClick={predictTransaction}>Send Transaction</button>
+        <button onClick={predictTransaction} disabled={busyAction !== ''}>
+          {busyAction === 'transaction' ? 'Scoring...' : 'Send Transaction'}
+        </button>
       </div>
 
       <hr style={{ borderColor: '#1f2937' }} />
@@ -81,7 +117,9 @@ export default function Controls({ onTestOne }) {
   />
 </div>
 <div className="row">
-  <button onClick={visualize}>Generate Chart</button>
+  <button onClick={visualize} disabled={busyAction !== ''}>
+    {busyAction === 'visualize' ? 'Generating...' : 'Generate Chart'}
+  </button>
 </div>
 
       <hr style={{ borderColor: '#1f2937' }} />
@@ -99,7 +137,9 @@ export default function Controls({ onTestOne }) {
         />
       </div>
       <div className="row">
-        <button onClick={predictNlp}>Check Message</button>
+        <button onClick={predictNlp} disabled={busyAction !== ''}>
+          {busyAction === 'nlp' ? 'Checking...' : 'Check Message'}
+        </button>
       </div>
     </div>
   );

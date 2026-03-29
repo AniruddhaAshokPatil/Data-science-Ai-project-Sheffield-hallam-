@@ -1,57 +1,154 @@
 :root {
-  --bg: #0b1020;
-  --card: #121a2b;
-  --muted: #a3b1c6;
-  --text: #e5ecf4;
-  --accent: #3b82f6;
+  /* I keep the main design tokens in :root so the dashboard colors are easy
+     to reuse and update across the whole frontend. */
+  --bg: #08111c;
+  --bg-accent: #10263d;
+  --card: rgba(11, 27, 43, 0.88);
+  --muted: #9eb0c7;
+  --text: #ecf3fa;
+  --accent: #2dd4bf;
   --danger: #ef4444;
-  --ok: #22c55e;
+  --ok: #16a34a;
   --warn: #f59e0b;
-  --border: #1f2937;
-  --row: #0f1629;
+  --border: rgba(148, 163, 184, 0.18);
+  --row: rgba(8, 24, 38, 0.92);
+  --shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
 }
 
+/* I set box-sizing globally because layout math is much easier to reason
+   about when padding and borders stay inside element widths. */
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.14), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(56, 189, 248, 0.12), transparent 26%),
+    linear-gradient(180deg, var(--bg-accent), var(--bg));
+  color: var(--text);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
 
+/* I use a tall flex layout so the page can stretch to full height and keep
+   the dashboard structure stable across different screen sizes. */
 .layout { display: flex; flex-direction: column; min-height: 100vh; }
 .header {
-  background: #0e1526; border-bottom: 1px solid var(--border);
-  padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(5, 15, 25, 0.78); border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(14px);
+  padding: 18px 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
 }
-.header h1 { font-size: 18px; margin: 0; }
+.header h1 { font-size: 24px; margin: 0; letter-spacing: 0.01em; }
+.header-copy { margin: 8px 0 0; max-width: 700px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.header-statuses { display: grid; gap: 10px; justify-items: end; }
 .header .status { font-size: 12px; color: var(--muted); }
 .header .status .dot {
   display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
 }
 .header .status .up { background: var(--ok); }
 .header .status .down { background: var(--danger); }
+.header .status .warn { background: var(--warn); }
 
-.content { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; padding: 14px; }
-.panel { background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
-.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+/* I use CSS grid for the main content so the live table can take more space
+   than the controls panel without needing extra wrapper complexity. */
+.content { display: grid; grid-template-columns: 1.75fr 1fr; gap: 18px; padding: 18px; }
+.left, .right { display: grid; gap: 18px; align-content: start; }
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; }
+.panel-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--border); }
 .panel h2 { margin: 0; font-size: 16px; }
+.panel-copy { margin: 6px 0 0; color: var(--muted); font-size: 13px; max-width: 540px; }
 
 .badges { display: flex; gap: 8px; }
 .badge {
   padding: 6px 10px; border-radius: 16px; font-size: 12px; font-weight: 600;
-  background: #0b1223; border: 1px solid var(--border); color: var(--text);
+  background: rgba(9, 19, 31, 0.74); border: 1px solid var(--border); color: var(--text);
 }
 
-.table-wrap { max-height: calc(100vh - 210px); overflow: auto; }
+.system-panel { min-height: 240px; }
+.system-summary {
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  padding: 14px 18px 0;
+}
+.system-meta { color: var(--muted); font-size: 13px; }
+.status-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px; padding: 14px 18px 18px;
+}
+.status-card {
+  background: rgba(6, 18, 30, 0.72);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+.status-card-header {
+  display: flex; justify-content: space-between; gap: 8px; align-items: center;
+}
+.status-description, .status-path {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.status-path { word-break: break-word; }
+.status-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  text-transform: capitalize;
+}
+.status-ready { background: rgba(22, 163, 74, 0.18); color: #86efac; }
+.status-degraded { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
+.status-not_ready, .status-unknown { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+.ghost-button {
+  background: transparent; color: var(--text); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; cursor: pointer;
+}
+.ghost-button:disabled { opacity: 0.6; cursor: wait; }
+.feedback {
+  margin: 0;
+  padding: 12px 18px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+.feedback.success { color: #a7f3d0; background: rgba(22, 163, 74, 0.12); }
+.feedback.error { color: #fecaca; background: rgba(239, 68, 68, 0.12); }
+.empty-state {
+  padding: 28px 18px 32px;
+  color: var(--muted);
+}
+.empty-state strong { display: block; margin-bottom: 8px; color: var(--text); }
+
+/* I keep the table scrollable so large live transaction lists do not push
+   the whole page off screen. */
+.table-wrap { max-height: calc(100vh - 420px); overflow: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th { position: sticky; top: 0; background: #0e1526; text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
+thead th { position: sticky; top: 0; background: #0d1e31; text-align: left; padding: 10px; border-bottom: 1px solid var(--border); }
 tbody tr { background: var(--row); border-bottom: 1px solid var(--border); }
 tbody td { padding: 10px; }
 tbody tr.high { background: rgba(239, 68, 68, 0.12); }
-tbody tr:hover { background: #16203a; }
+tbody tr:hover { background: #163049; }
 
-.controls { padding: 12px 14px; display: grid; gap: 12px; }
+/* I style the controls as a grid because forms are easier to scan when each
+   input row has consistent spacing and alignment. */
+.controls { padding: 16px 18px 18px; display: grid; gap: 12px; }
 .controls .row { display: grid; gap: 6px; }
 .controls label { font-size: 13px; color: var(--muted); }
 .controls input, .controls textarea, .controls button, .controls select {
-  background: #0b1223; color: var(--text); border: 1px solid var(--border);
-  padding: 10px; border-radius: 6px; font-size: 14px;
+  background: rgba(7, 18, 31, 0.86); color: var(--text); border: 1px solid var(--border);
+  padding: 10px; border-radius: 10px; font-size: 14px;
 }
-.controls button { cursor: pointer; background: var(--accent); border: 0; }
+.controls button { cursor: pointer; background: linear-gradient(135deg, var(--accent), #0ea5e9); border: 0; color: #042233; font-weight: 700; }
+.controls button:disabled { opacity: 0.65; cursor: wait; }
 .controls .group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+hr { width: 100%; border: 0; border-top: 1px solid var(--border); }
+
+@media (max-width: 960px) {
+  .content { grid-template-columns: 1fr; }
+  .header { flex-direction: column; }
+  .header-statuses { justify-items: start; }
+  .table-wrap { max-height: 480px; }
+}
+
+@media (max-width: 640px) {
+  .content { padding: 14px; gap: 14px; }
+  .controls .group { grid-template-columns: 1fr; }
+  .badges { flex-wrap: wrap; }
+  .panel-header { align-items: flex-start; flex-direction: column; }
+}

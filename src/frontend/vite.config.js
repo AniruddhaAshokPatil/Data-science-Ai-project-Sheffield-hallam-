@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Simple Vite config. The server proxy helps avoid CORS during dev if needed.
+// I keep the Vite config small because this frontend is still lightweight, but
+// the dev proxy is important so frontend requests can reach the backend cleanly.
 export default defineConfig({
   plugins: [react()],
+  build: {
+    sourcemap: true,
+    target: 'es2020'
+  },
   server: {
     port: 5173,
     open: true,

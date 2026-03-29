@@ -7,34 +7,79 @@ import { useEffect, useRef, useState } from 'react';
  * - Exposes lastMessage
  */
 export default function useWebSocket(url) {
+  // I store the WebSocket instance in a ref because I want the connection to
+  // persist across renders without causing extra re-renders itself.
   const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
   const [status, setStatus] = useState('idle');
   const [lastMessage, setLastMessage] = useState(null);
+  const [lastError, setLastError] = useState('');
 
   useEffect(() => {
-    if (!url) return;
+    // I return early when there is no URL because the hook should do nothing
+    // until the frontend knows which WebSocket endpoint to connect to.
+    if (!url) return undefined;
 
-    setStatus('connecting');
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
+    let cancelled = false;
+    let ping = null;
 
-    ws.onopen = () => setStatus('open');
-    ws.onmessage = (ev) => setLastMessage(ev);
-    ws.onerror = () => setStatus('error');
-    ws.onclose = () => setStatus('closed');
+    function connect(attempt = 0) {
+      if (cancelled) return;
 
-    // Keep-alive ping every 20s (server expects receive_text loop)
-    const ping = setInterval(() => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send('ping');
-      }
-    }, 20000);
+      setStatus('connecting');
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setStatus('open');
+        setLastError('');
+      };
+
+      ws.onmessage = (ev) => {
+        try {
+          setLastMessage(JSON.parse(ev.data));
+        } catch {
+          setLastMessage(ev.data);
+        }
+      };
+
+      ws.onerror = () => {
+        setStatus('error');
+        setLastError('I could not keep the live WebSocket connection open.');
+      };
+
+      ws.onclose = () => {
+        setStatus('closed');
+        if (!cancelled) {
+          const delayMs = Math.min(1000 * 2 ** attempt, 10000);
+          reconnectTimeoutRef.current = window.setTimeout(() => connect(attempt + 1), delayMs);
+        }
+      };
+
+      ping = window.setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send('ping');
+        }
+      }, 20000);
+    }
+
+    connect();
 
     return () => {
-      clearInterval(ping);
-      try { ws.close(); } catch {}
+      // I clean up the interval and close the socket so unmounted components
+      // do not leave background connections running.
+      cancelled = true;
+      if (ping) {
+        window.clearInterval(ping);
+      }
+      if (reconnectTimeoutRef.current) {
+        window.clearTimeout(reconnectTimeoutRef.current);
+      }
+      try {
+        wsRef.current?.close();
+      } catch {}
     };
   }, [url]);
 
-  return { status, lastMessage };
+  return { status, lastMessage, lastError };
 }
