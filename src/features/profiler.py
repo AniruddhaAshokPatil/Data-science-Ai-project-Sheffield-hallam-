@@ -1,9 +1,11 @@
 import pandas as pd
+from pathlib import Path
 
 # 1. SETTING MY FILE PATHS
 # I am saving these project paths here so this small profiling script knows where to read data from.
-card_data_path = '/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/data/card_transdata.csv'
-financial_data_path = '/Users/productguru/Documents/GitHub/Data-science-Ai-project-Sheffield-hallam-/data/financial_fraud_detection_dataset 2.csv'
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+card_data_path = PROJECT_ROOT / "data" / "raw" / "transactions" / "card_transdata.csv"
+financial_data_path = PROJECT_ROOT / "data" / "raw" / "transactions" / "financial_fraud_detection_dataset.csv"
 
 # 2. MY OUTLIER DISCOVERY FUNCTION
 # I wrote this function so I can reuse it for any column in any dataset

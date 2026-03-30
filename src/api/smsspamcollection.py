@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 import joblib
 
+from src.data.preprocess_nlp import load_sms_dataset
+
 
 def run_sms_classifier(
     path=None,
@@ -22,7 +24,7 @@ def run_sms_classifier(
     # I build the default path here so this file can run on its own and still find the project dataset.
     if path is None:
         project_root = Path(__file__).resolve().parents[2]
-        path = project_root / "data" / "SMSSpamCollection"
+        path = project_root / "data" / "raw" / "nlp" / "sms_spam.csv"
     else:
         path = Path(path)
 
@@ -31,13 +33,7 @@ def run_sms_classifier(
         return None
 
     try:
-        dataframe = pd.read_csv(
-            path,
-            sep="\t",
-            names=["label", "message"],
-            encoding="utf-8",
-            on_bad_lines="skip",
-        )
+        dataframe = load_sms_dataset(path)
     except Exception as e:
         print("Could not read dataset:", e)
         return None

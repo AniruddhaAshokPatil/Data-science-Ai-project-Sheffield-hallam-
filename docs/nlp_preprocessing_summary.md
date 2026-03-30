@@ -15,7 +15,7 @@ its body actually asks for the SMS spam preprocessing deliverable.
 
 - preprocessing script: `src/data/preprocess_nlp.py`
 - raw dataset path: `data/raw/nlp/SMSSpamCollection.csv`
-- cleaned corpus path: `data/SMSSpamCollection`
+- alternate raw dataset path: `data/raw/nlp/sms_spam.csv`
 
 ## How This Supports the Project
 

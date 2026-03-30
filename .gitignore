@@ -18,5 +18,6 @@ __pycache__/
 htmlcov/
 .env
 .env.local
+true.env
 src/frontend/.env
 src/frontend/.env.local

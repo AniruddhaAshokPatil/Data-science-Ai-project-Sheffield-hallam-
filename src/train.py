@@ -19,7 +19,7 @@ from src.train.model_paths import (
 
 
 DEFAULT_CV_CSV = "data/processed/cv/labels.csv"
-DEFAULT_SMS_DATASET = "data/SMSSpamCollection"
+DEFAULT_SMS_DATASET = "data/raw/nlp/sms_spam.csv"
 DEFAULT_TABULAR_DATASET = "data/processed/transactions/clean_validation.csv"
 DEFAULT_ANOMALY_DATASET = "data/processed/transactions/clean_main.csv"
 

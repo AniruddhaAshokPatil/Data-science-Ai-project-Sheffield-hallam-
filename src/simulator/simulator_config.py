@@ -9,7 +9,7 @@ class SimConfig:
     # I build paths from this file location so the simulator still works when the project is moved.
     project_root = Path(__file__).resolve().parents[2]
     data_dir = project_root / "data"
-    card_csv = data_dir / "card_transdata.csv"
+    card_csv = data_dir / "raw" / "transactions" / "card_transdata.csv"
 
     # I keep the delay in config so I can slow down or speed up the demo without editing logic files.
     delay_seconds = 0.5

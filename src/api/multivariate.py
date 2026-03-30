@@ -9,7 +9,7 @@ def run_multivariate_visualization(show_plot=False):
     # the command line without depending on where I launched Python from.
     backend_dir = Path(__file__).resolve().parent
     project_root = backend_dir.parent.parent
-    input_path = project_root / "data" / "card_transdata.csv"
+    input_path = project_root / "data" / "raw" / "transactions" / "card_transdata.csv"
     output_path = backend_dir / "outputs" / "risk_visualization.png"
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

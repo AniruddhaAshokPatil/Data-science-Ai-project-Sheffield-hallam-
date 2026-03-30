@@ -13,10 +13,11 @@ class Config(BaseModel):
     # I keep shared dataset paths here because multiple API files need them,
     # and this gives me one central place to update if the layout changes.
     data_dir: Path = project_root / "data"
+    raw_data_dir: Path = data_dir / "raw"
     processed_transactions_dir: Path = data_dir / "processed" / "transactions"
     card_csv: Path = processed_transactions_dir / "clean_validation.csv"
     financial_csv: Path = processed_transactions_dir / "clean_main.csv"
-    sms_corpus: Path = data_dir / "SMSSpamCollection"
+    sms_corpus: Path = raw_data_dir / "nlp" / "SMSSpamCollection.csv"
 
     # I keep output locations here for the same reason: analytics and visual
     # files should be saved consistently across the backend.
