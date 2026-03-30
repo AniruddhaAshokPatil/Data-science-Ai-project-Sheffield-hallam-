@@ -1,11 +1,10 @@
-# src/api/anomaly_inference.py
-
-import os
 import pickle
 import logging
 
 import numpy as np
 import pandas as pd
+
+from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,9 +14,10 @@ logging.basicConfig(
 class AnomalyModel:
     # I wrap the anomaly workflow in a class so the wider fraud project can load once and predict many times.
 
-    def __init__(self, model_path="models/"):
+    def __init__(self, model_path=ANOMALY_MODEL, metadata_path=ANOMALY_METADATA):
         # I keep these values on the object because loading happens once, but prediction may happen many times.
         self.model_path = model_path
+        self.metadata_path = metadata_path
         self.pipeline = None
         self.metadata = None
         self.feature_names = None
@@ -25,13 +25,10 @@ class AnomalyModel:
     def load(self):
         # I load the artifacts here instead of at import time so this module stays safer to reuse in the API.
         try:
-            pipeline_path = os.path.join(self.model_path, "anomaly_pipeline.pkl")
-            metadata_path = os.path.join(self.model_path, "anomaly_metadata.pkl")
-
-            with open(pipeline_path, "rb") as pipeline_file:
+            with open(self.model_path, "rb") as pipeline_file:
                 self.pipeline = pickle.load(pipeline_file)
 
-            with open(metadata_path, "rb") as metadata_file:
+            with open(self.metadata_path, "rb") as metadata_file:
                 self.metadata = pickle.load(metadata_file)
 
             # I save these calibration values because the raw anomaly output is not very readable on its own.

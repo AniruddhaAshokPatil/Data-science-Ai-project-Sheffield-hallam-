@@ -1,110 +1,143 @@
-import os
-import logging
+import argparse
+import json
+from pathlib import Path
 import pickle
 
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-# I am fixing randomness so results are consistent every time I run
-np.random.seed(42)
+from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-)
 
-# I keep training paths together here because this file is the anomaly-model
-# stage of the wider fraud training pipeline.
-INPUT_PATH = "data/processed/transactions/"
-MODEL_PATH = "models/"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_INPUT = PROJECT_ROOT / "data" / "processed" / "transactions" / "clean_validation.csv"
+TARGET_COLUMN = "is_fraud"
+MAX_TRAINING_ROWS = 200000
 
-os.makedirs(MODEL_PATH, exist_ok=True)
 
-logging.info("I am loading datasets...")
-
-# I load only the training split here because anomaly training should learn
-# what normal behavior looks like before I score suspicious behavior.
-X_train_path = INPUT_PATH + "X_train.csv"
-y_train_path = INPUT_PATH + "y_train.csv"
-
-X_train = pd.read_csv(X_train_path)
-y_train_frame = pd.read_csv(y_train_path)
-y_train = y_train_frame.values.ravel()
-
-missing_value_count = X_train.isnull().sum().sum()
-if missing_value_count > 0:
-    raise ValueError("I found missing values in training data")
-
-# I train on legitimate transactions only because anomaly detection is meant
-# to learn the normal pattern and then flag deviations from it.
-X_train_normal = X_train[y_train == 0]
-
-logging.info(f"I am training on {len(X_train_normal)} normal samples")
-
-# I use a pipeline here so feature scaling and the anomaly model stay linked
-# together when I later save and reuse them.
-anomaly_model = IsolationForest(
-    n_estimators=200,
-    contamination="auto",
-    random_state=42,
-    n_jobs=-1,
-)
-
-pipeline_steps = [
-    ("scaler", StandardScaler()),
-    ("model", anomaly_model),
-]
-pipeline = Pipeline(pipeline_steps)
-
-logging.info("I am training anomaly model...")
-
-pipeline.fit(X_train_normal)
-
-# I am using ONLY training data to define score distribution
-# I use decision_function on training-normal data because I need a reference
-# score distribution before I can calibrate anomaly scores for inference.
-train_scores = pipeline.decision_function(X_train_normal)
-
-score_min = train_scores.min()
-score_max = train_scores.max()
-
-logging.info(f"Score range (train): {score_min:.4f} → {score_max:.4f}")
-
-# I define the score conversion here so the raw IsolationForest output can be
-# turned into a clearer fraud-like score between 0 and 1.
 def compute_anomaly_score(raw_score, min_val, max_val):
-    """
-    I convert raw IsolationForest output into [0,1] fraud score
-    """
+    # I convert the raw IsolationForest output into a 0 to 1 style risk score
+    # because the rest of the project reasons about fraud on that scale.
     score_range = max_val - min_val + 1e-6
     scaled = (raw_score - min_val) / score_range
-    anomaly_score = 1 - scaled
-    return anomaly_score
+    return 1 - scaled
 
-# I use a percentile threshold because anomaly detection often depends on the
-# tail of the score distribution rather than a fixed class boundary.
-calibrated_train_scores = compute_anomaly_score(train_scores, score_min, score_max)
-threshold = np.percentile(calibrated_train_scores, 95)
 
-logging.info(f"Anomaly threshold set at: {threshold:.4f}")
+def _load_training_frame(input_path: Path) -> pd.DataFrame:
+    # I keep input loading in one helper so I can fail clearly when the issue's
+    # training dataset is missing or shaped differently than expected.
+    input_path = Path(input_path)
+    if not input_path.exists():
+        raise FileNotFoundError(f"Training dataset not found at: {input_path}")
 
-# I save the full pipeline because inference needs both scaling and the model.
-pipeline_output_path = MODEL_PATH + "anomaly_pipeline.pkl"
-with open(pipeline_output_path, "wb") as pipeline_file:
-    pickle.dump(pipeline, pipeline_file)
+    dataframe = pd.read_csv(input_path)
+    if TARGET_COLUMN not in dataframe.columns:
+        raise ValueError(f"Training dataset must contain '{TARGET_COLUMN}'.")
+    if dataframe.isnull().sum().sum() > 0:
+        raise ValueError("I found missing values in the anomaly training dataset.")
 
-# I save calibration information because inference needs the same score conversion later.
-metadata = {
-    "score_min": float(score_min),
-    "score_max": float(score_max),
-    "threshold": float(threshold),
-}
+    return dataframe
 
-metadata_output_path = MODEL_PATH + "anomaly_metadata.pkl"
-with open(metadata_output_path, "wb") as metadata_file:
-    pickle.dump(metadata, metadata_file)
 
-logging.info("I have saved anomaly pipeline and metadata successfully.")
+def train_anomaly_model(
+    input_path: Path = DEFAULT_INPUT,
+    model_output: Path = ANOMALY_MODEL,
+    metadata_output: Path = ANOMALY_METADATA,
+    max_rows: int = MAX_TRAINING_ROWS,
+) -> dict:
+    # I train on the labeled validation-style dataset here because it already
+    # contains the structured fraud features this project serves at runtime.
+    dataframe = _load_training_frame(input_path)
+    if max_rows and len(dataframe) > max_rows:
+        # I cap training rows here so the project can still retrain locally on
+        # a laptop without turning this issue into an hours-long batch job.
+        dataframe = dataframe.sample(n=max_rows, random_state=42)
+    labels = dataframe[TARGET_COLUMN].astype(int)
+    features = dataframe.drop(columns=[TARGET_COLUMN])
+
+    # I learn the anomaly boundary only from legitimate rows because the model
+    # is supposed to treat unusual behavior as suspicious drift from normal.
+    normal_features = features[labels == 0]
+    if normal_features.empty:
+        raise ValueError("I need at least one legitimate transaction to train the anomaly model.")
+
+    pipeline = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "model",
+                IsolationForest(
+                    n_estimators=200,
+                    contamination="auto",
+                    random_state=42,
+                    n_jobs=-1,
+                ),
+            ),
+        ]
+    )
+    pipeline.fit(normal_features)
+
+    train_scores = pipeline.decision_function(normal_features)
+    score_min = float(train_scores.min())
+    score_max = float(train_scores.max())
+    calibrated_train_scores = compute_anomaly_score(train_scores, score_min, score_max)
+    threshold = float(np.percentile(calibrated_train_scores, 95))
+
+    model_output = Path(model_output)
+    metadata_output = Path(metadata_output)
+    model_output.parent.mkdir(parents=True, exist_ok=True)
+    metadata_output.parent.mkdir(parents=True, exist_ok=True)
+
+    # I save the whole scaler-plus-model pipeline so inference uses the same
+    # numeric preparation that training used.
+    joblib.dump(pipeline, model_output)
+
+    metadata = {
+        "input_path": str(input_path),
+        "features": list(features.columns),
+        "score_min": score_min,
+        "score_max": score_max,
+        "threshold": threshold,
+        "normal_rows": int(len(normal_features)),
+        "total_rows": int(len(dataframe)),
+    }
+    with metadata_output.open("wb") as metadata_file:
+        pickle.dump(metadata, metadata_file)
+
+    return {
+        "model_path": str(model_output),
+        "metadata_path": str(metadata_output),
+        "normal_rows": int(len(normal_features)),
+        "total_rows": int(len(dataframe)),
+        "threshold": threshold,
+    }
+
+
+def parse_args():
+    # I expose the paths here so I can retrain against a different prepared
+    # transaction dataset without editing this script each time.
+    parser = argparse.ArgumentParser(description="Train the anomaly detection model.")
+    parser.add_argument("--input-path", default=str(DEFAULT_INPUT))
+    parser.add_argument("--model-output", default=str(ANOMALY_MODEL))
+    parser.add_argument("--metadata-output", default=str(ANOMALY_METADATA))
+    parser.add_argument("--max-rows", type=int, default=MAX_TRAINING_ROWS)
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    summary = train_anomaly_model(
+        input_path=Path(args.input_path),
+        model_output=Path(args.model_output),
+        metadata_output=Path(args.metadata_output),
+        max_rows=args.max_rows,
+    )
+    print(json.dumps(summary, indent=2))
+
+
+if __name__ == "__main__":
+    main()

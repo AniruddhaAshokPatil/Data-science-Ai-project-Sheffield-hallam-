@@ -1,10 +1,11 @@
 import os
 import time
 import unittest
-
-from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from fastapi import FastAPI
+
+from src.api.main import create_app
 from src.api.routers.transactions import router as transactions_router
 
 TIMEOUT_THRESHOLD = 0.5
@@ -96,3 +97,25 @@ class EndToEndTransactionTests(unittest.TestCase):
                     "I need the optional httpx dependency installed before I can run FastAPI integration tests."
                 )
             raise
+
+
+def test_websocket_scores_and_broadcasts_transaction_payload():
+    """
+    I send a live transaction over WebSocket here because this is the closest
+    automated proof of the dashboard event flow the project currently has.
+    """
+    os.makedirs("/tmp/matplotlib", exist_ok=True)
+    os.environ.setdefault("MPLCONFIGDIR", "/tmp/matplotlib")
+    client = TestClient(create_app())
+
+    start_time = time.time()
+    with client.websocket_connect("/ws/transactions") as websocket:
+        websocket.send_json(FRAUD_TRANSACTION)
+        payload = websocket.receive_json()
+    latency = time.time() - start_time
+
+    assert payload["profile"] == "financial"
+    assert "risk" in payload
+    assert "details" in payload
+    assert payload["details"]["tabular_prob"] >= 0
+    assert latency < TIMEOUT_THRESHOLD

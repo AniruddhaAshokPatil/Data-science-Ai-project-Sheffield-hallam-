@@ -1,10 +1,9 @@
-# src/api/services/anomaly.py
-
-import os
 import pickle
 import numpy as np
 import pandas as pd
 import logging
+
+from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL
 
 # -------------------------------
 # STEP 1: Logging
@@ -24,8 +23,9 @@ class AnomalyModel:
     - applying threshold
     """
 
-    def __init__(self, model_path="models/"):
+    def __init__(self, model_path=ANOMALY_MODEL, metadata_path=ANOMALY_METADATA):
         self.model_path = model_path
+        self.metadata_path = metadata_path
         self.pipeline = None
         self.metadata = None
 
@@ -35,12 +35,14 @@ class AnomalyModel:
 
     def load(self):
         try:
-            # I load trained pipeline (scaler + IsolationForest)
-            with open(os.path.join(self.model_path, "anomaly_pipeline.pkl"), "rb") as f:
-                self.pipeline = pickle.load(f)
+            # I load the saved anomaly pipeline here because the API should use
+            # the same fitted scaler and IsolationForest from training.
+            with open(self.model_path, "rb") as model_file:
+                self.pipeline = pickle.load(model_file)
 
-            # I load calibration values
-            with open(os.path.join(self.model_path, "anomaly_metadata.pkl"), "rb") as f:
+            # I load calibration values from the shared metadata path so the
+            # risk score scaling stays consistent across the whole project.
+            with open(self.metadata_path, "rb") as f:
                 self.metadata = pickle.load(f)
 
             self.score_min = self.metadata["score_min"]

@@ -24,6 +24,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.data.dataset import CVDataset
+from src.models.simple_cnn import SimpleCNN
+from src.train.model_paths import CV_CNN_MODEL
 
 # -------------------------------
 # STEP 1: Reproducibility
@@ -120,22 +122,10 @@ def load_dataset(csv_path, validation_split=0.2):
 
 def build_model():
     """
-    I am using ResNet18 with transfer learning
+    I use the shared SimpleCNN architecture here because the API loader expects
+    the same model shape when it later restores the saved CV weights.
     """
-
-    # I use ResNet18 because it is a standard beginner-friendly transfer
-    # learning backbone for image classification tasks.
-    model = models.resnet18(weights="DEFAULT")
-
-    # I freeze the backbone first because transfer learning often works well
-    # when I only retrain the final head on a smaller project dataset.
-    for param in model.parameters():
-        param.requires_grad = False
-
-    # I replace the final layer because this project needs one fraud-vs-normal
-    # output instead of the original ImageNet classes.
-    model.fc = nn.Linear(model.fc.in_features, 1)
-
+    model = SimpleCNN()
     return model.to(device)
 
 # -------------------------------
@@ -156,7 +146,7 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
     # I use BCEWithLogitsLoss because this is a binary classification problem
     # and the model returns one raw logit for each image.
     criterion = nn.BCEWithLogitsLoss()
-    optimizer = optim.Adam(model.fc.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
     best_val_loss = float("inf")
 
@@ -221,7 +211,8 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
         # strongest validation result seen during training.
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(model.state_dict(), "models/cv_model.pth")
+            CV_CNN_MODEL.parent.mkdir(parents=True, exist_ok=True)
+            torch.save(model.state_dict(), CV_CNN_MODEL)
 
     # -------------------------------
     # STEP 8: Save Metadata
@@ -234,7 +225,8 @@ def train(csv_path, epochs=5, batch_size=16, lr=1e-3):
         "threshold": 0.5
     }
 
-    with open("models/cv_metadata.pkl", "wb") as f:
+    metadata_path = CV_CNN_MODEL.with_suffix(".metadata.pkl")
+    with open(metadata_path, "wb") as f:
         pickle.dump(metadata, f)
 
     logging.info("I have saved the best CV model and metadata.")

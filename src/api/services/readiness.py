@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from src.api.config import cfg
-from src.train.model_paths import CV_CNN_MODEL, NLP_MODEL, NLP_VECTORIZER
+from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL, CV_CNN_MODEL, NLP_MODEL, NLP_VECTORIZER
 
 
 def _file_status(path: Path, *, required: bool, description: str) -> dict[str, Any]:
@@ -83,6 +83,16 @@ def get_readiness_report() -> dict[str, Any]:
             NLP_VECTORIZER,
             required=False,
             description="NLP vectorizer artifact",
+        ),
+        "anomaly_model": _file_status(
+            ANOMALY_MODEL,
+            required=False,
+            description="Anomaly model artifact",
+        ),
+        "anomaly_metadata": _file_status(
+            ANOMALY_METADATA,
+            required=False,
+            description="Anomaly model metadata",
         ),
         "cv_model": _file_status(
             CV_CNN_MODEL,
