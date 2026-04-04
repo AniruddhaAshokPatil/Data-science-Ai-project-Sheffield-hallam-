@@ -1,3 +1,5 @@
+import React from 'react';
+
 export default function Header({ wsConnected, apiStatus }) {
   return (
     <header className="header">

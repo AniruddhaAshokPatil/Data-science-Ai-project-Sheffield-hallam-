@@ -1,3 +1,5 @@
+import React from 'react';
+
 function formatLabel(key) {
   // I humanize readiness keys here so the dashboard can explain backend state
   // without showing raw API field names directly to operators.

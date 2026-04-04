@@ -19,6 +19,10 @@ _nlp_status = {"ready": False, "reason": "NLP model not initialized yet."}
 _vec = None
 _model = None
 
+URGENCY_TERMS = {"urgent", "suspended", "locked", "immediately", "warning"}
+ACTION_TERMS = {"click", "verify", "confirm", "claim", "login"}
+IMPERSONATION_TERMS = {"bank", "account", "security", "payment", "wallet"}
+
 
 def _ensure_nlp_model_ready():
     # I lazy-load the NLP model here so API startup stays fast and one missing
@@ -84,10 +88,38 @@ def _build_prediction_response(message: str):
     transformed_message = _vec.transform([message])
     prediction = int(_model.predict(transformed_message)[0])
     verdict = "SPAM" if prediction == 1 else "SAFE"
+    probability_values = _model.predict_proba(transformed_message)[0]
+    spam_probability = float(probability_values[1])
+
+    lowered_message = message.lower()
+    urgency_hits = [term for term in URGENCY_TERMS if term in lowered_message]
+    action_hits = [term for term in ACTION_TERMS if term in lowered_message]
+    impersonation_hits = [term for term in IMPERSONATION_TERMS if term in lowered_message]
+
+    detected_intent = "phishing" if prediction == 1 or action_hits or impersonation_hits else "normal"
+    explanations = []
+
+    if urgency_hits:
+        explanations.append("I found urgency language that tries to pressure the user into acting quickly.")
+    if action_hits:
+        explanations.append("I found call-to-action wording that pushes the user to click, verify, or confirm something.")
+    if impersonation_hits:
+        explanations.append("I found account or institution language that can support phishing-style impersonation.")
+    if not explanations:
+        explanations.append("I did not find strong suspicious language signals in the message.")
+
     return {
         "ready": True,
         "prediction": prediction,
         "verdict": verdict,
+        "spam_probability": spam_probability,
+        "detected_intent": detected_intent,
+        "signal_breakdown": {
+            "urgency_terms": urgency_hits,
+            "action_terms": action_hits,
+            "impersonation_terms": impersonation_hits,
+        },
+        "explanations": explanations,
     }
 
 

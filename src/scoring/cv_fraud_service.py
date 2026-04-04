@@ -209,6 +209,27 @@ def predict_cv_fraud(image_path, metadata=None):
     )
 
     verdict = "fraud_suspected" if fraud_score >= 0.5 else "likely_genuine"
+    detected_anomalies = []
+    explanations = []
+
+    if model_score >= 0.6:
+        detected_anomalies.append("visual_pattern_mismatch")
+        explanations.append("I found a strong visual anomaly score from the main CV model path.")
+    if blur_score >= 0.55:
+        detected_anomalies.append("blur_or_quality_issue")
+        explanations.append("I found blur or image-quality issues that make the document look less trustworthy.")
+    if ocr_score <= 0.35:
+        detected_anomalies.append("text_region_irregularity")
+        explanations.append("I found text-region behaviour that does not match the expected document balance.")
+    if metadata_score >= 0.4:
+        detected_anomalies.append("metadata_context_risk")
+        explanations.append("I found metadata clues that increase document risk, such as suspicious source or edit history.")
+
+    if not explanations:
+        explanations.append("I did not find strong suspicious visual evidence in this document image.")
+
+    confidence = 1.0 - (max(model_score, blur_score, ocr_score, metadata_score) - min(model_score, blur_score, ocr_score, metadata_score))
+    confidence = float(max(0.2, min(0.98, confidence)))
 
     details = {}
     details["model_score"] = model_score
@@ -220,6 +241,13 @@ def predict_cv_fraud(image_path, metadata=None):
     result = {}
     result["fraud_score"] = fraud_score
     result["verdict"] = verdict
+    result["confidence"] = confidence
+    result["detected_anomalies"] = detected_anomalies
+    result["explanations"] = explanations
+    result["evidence_summary"] = (
+        "I combined the main visual score, blur score, text-region score, "
+        "and metadata score to explain this document result."
+    )
     result["details"] = details
     result["model_path"] = str(CV_CNN_MODEL)
     return result
