@@ -130,6 +130,11 @@ tbody tr:hover { background: #163049; }
 .controls { padding: 16px 18px 18px; display: grid; gap: 12px; }
 .controls .row { display: grid; gap: 6px; }
 .controls label { font-size: 13px; color: var(--muted); }
+.control-copy {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 .controls input, .controls textarea, .controls button, .controls select {
   background: rgba(7, 18, 31, 0.86); color: var(--text); border: 1px solid var(--border);
   padding: 10px; border-radius: 10px; font-size: 14px;

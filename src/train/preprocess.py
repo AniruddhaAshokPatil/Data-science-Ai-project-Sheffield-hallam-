@@ -1,8 +1,63 @@
-import pandas as pd
 import joblib
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 from src.train.model_paths import PREPROCESSOR
+
+
+# I list the most useful financial fraud columns here because they appear in the
+# raw financial dataset and also match the features that my API scores at runtime.
+PRIMARY_FINANCIAL_FEATURES = [
+    "amount",
+    "time_since_last_transaction",
+    "spending_deviation_score",
+    "velocity_score",
+    "geo_anomaly_score",
+]
+
+
+def load_transaction_training_dataframe(csv_path: str) -> pd.DataFrame:
+    """
+    I load one transaction CSV and convert it into a clean training table that
+    works for both the raw financial dataset and the processed datasets.
+    """
+    dataframe = pd.read_csv(csv_path)
+
+    if "is_fraud" not in dataframe.columns:
+        raise ValueError("Dataset must contain an 'is_fraud' column.")
+
+    # I prefer the financial fraud feature set first because it is the dataset
+    # the user asked to use, and those columns line up well with the live API.
+    selected_feature_columns = []
+    for column_name in PRIMARY_FINANCIAL_FEATURES:
+        if column_name in dataframe.columns:
+            selected_feature_columns.append(column_name)
+
+    # I fall back to every numeric feature when a dataset uses a different
+    # schema, because I still want older prepared files to keep working.
+    if not selected_feature_columns:
+        numeric_columns = dataframe.select_dtypes(include=["number", "bool"]).columns.tolist()
+        selected_feature_columns = [
+            column_name for column_name in numeric_columns if column_name != "is_fraud"
+        ]
+
+    if not selected_feature_columns:
+        raise ValueError("I could not find any numeric transaction features to train on.")
+
+    cleaned_dataframe = dataframe[selected_feature_columns + ["is_fraud"]].copy()
+
+    # I fill missing numeric values with the median of each column so the raw
+    # financial dataset can train cleanly even when some rows are incomplete.
+    for column_name in selected_feature_columns:
+        median_value = cleaned_dataframe[column_name].median()
+        if pd.isna(median_value):
+            median_value = 0.0
+        cleaned_dataframe[column_name] = cleaned_dataframe[column_name].fillna(median_value)
+
+    # I convert the target into 0 and 1 integers because some CSV files store
+    # fraud labels as True and False instead of plain numbers.
+    cleaned_dataframe["is_fraud"] = cleaned_dataframe["is_fraud"].astype(int)
+    return cleaned_dataframe
 
 
 def build_preprocessor(df: pd.DataFrame):

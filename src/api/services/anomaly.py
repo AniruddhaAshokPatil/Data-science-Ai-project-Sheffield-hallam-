@@ -1,134 +1,93 @@
-import pickle
+"""I keep the reusable anomaly model service here for transaction scoring."""
+
+import logging
+
+import joblib
 import numpy as np
 import pandas as pd
-import logging
 
 from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL
 
-# -------------------------------
-# STEP 1: Logging
-# -------------------------------
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# -------------------------------
-# STEP 2: Anomaly Model Wrapper
-# -------------------------------
 
 class AnomalyModel:
-    """
-    I manage:
-    - loading anomaly model
-    - scaling anomaly scores
-    - applying threshold
-    """
+    """I manage loading, validating, and scoring anomaly-detection inputs."""
 
     def __init__(self, model_path=ANOMALY_MODEL, metadata_path=ANOMALY_METADATA):
+        # I store the artifact paths here because the same object may load once
+        # and then serve many prediction requests afterward.
         self.model_path = model_path
         self.metadata_path = metadata_path
         self.pipeline = None
         self.metadata = None
-
-    # -------------------------------
-    # STEP 3: Load Model + Metadata
-    # -------------------------------
+        self.feature_names = None
+        self.score_min = None
+        self.score_max = None
+        self.threshold = None
 
     def load(self):
+        # I load the saved model and the calibration metadata together because
+        # the raw anomaly output is not meaningful without the saved scaling
+        # values from training.
         try:
-            # I load the saved anomaly pipeline here because the API should use
-            # the same fitted scaler and IsolationForest from training.
-            with open(self.model_path, "rb") as model_file:
-                self.pipeline = pickle.load(model_file)
-
-            # I load calibration values from the shared metadata path so the
-            # risk score scaling stays consistent across the whole project.
-            with open(self.metadata_path, "rb") as f:
-                self.metadata = pickle.load(f)
-
-            self.score_min = self.metadata["score_min"]
-            self.score_max = self.metadata["score_max"]
-            self.threshold = self.metadata["threshold"]
-
-            # Optional: feature names for alignment
-            self.feature_names = self.metadata.get("features", None)
-
-            logging.info("Anomaly model loaded successfully.")
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to load anomaly model: {e}")
-
-    # -------------------------------
-    # STEP 4: Input Validation
-    # -------------------------------
+            self.pipeline = joblib.load(self.model_path)
+            self.metadata = joblib.load(self.metadata_path)
+            self.feature_names = self.metadata.get("features")
+            self.score_min = float(self.metadata["score_min"])
+            self.score_max = float(self.metadata["score_max"])
+            self.threshold = float(self.metadata["threshold"])
+            logger.info("I loaded the anomaly model from %s.", self.model_path)
+        except Exception as exc:
+            raise RuntimeError(f"I could not load the anomaly model: {exc}") from exc
 
     def _validate_input(self, X):
-        """
-        I ensure input is correct before prediction
-        """
+        # I validate the incoming data first because anomaly models are very
+        # sensitive to missing values and mismatched column order.
+        if X is None or len(X) == 0:
+            raise ValueError("I need at least one row of input data.")
 
         if isinstance(X, np.ndarray):
             X = pd.DataFrame(X)
 
-        if X is None or len(X) == 0:
-            raise ValueError("Input data is empty")
+        if not isinstance(X, pd.DataFrame):
+            raise TypeError("I expect anomaly inputs as a pandas DataFrame or numpy array.")
 
         if X.isnull().sum().sum() > 0:
-            raise ValueError("Input contains missing values")
+            raise ValueError("I found missing values in the anomaly input data.")
 
-        # I align columns to training schema
         if self.feature_names is not None:
-            missing = set(self.feature_names) - set(X.columns)
-            if missing:
-                raise ValueError(f"Missing features: {missing}")
+            missing_features = sorted(set(self.feature_names) - set(X.columns))
+            if missing_features:
+                raise ValueError(f"I am missing required features: {missing_features}")
 
+            # I reorder the columns here so prediction uses the same feature
+            # order that the model saw during training.
             X = X[self.feature_names]
 
         return X
 
-    # -------------------------------
-    # STEP 5: Score Calibration
-    # -------------------------------
-
     def _compute_score(self, raw_score):
-        """
-        I convert raw IsolationForest output into [0,1]
-        """
-
-        scaled = (raw_score - self.score_min) / (
-            self.score_max - self.score_min + 1e-6
-        )
-
-        return 1 - scaled  # higher = more anomalous
-
-    # -------------------------------
-    # STEP 6: Predict
-    # -------------------------------
+        # I convert the raw Isolation Forest output into a friendlier 0 to 1
+        # score so the wider project can treat higher values as higher risk.
+        score_range = self.score_max - self.score_min + 1e-6
+        scaled_score = (raw_score - self.score_min) / score_range
+        return 1 - scaled_score
 
     def predict(self, X):
-        """
-        I return:
-        - anomaly score [0,1]
-        - binary fraud flag
-        """
-
+        # I guard against unloaded artifacts because I want any misuse of this
+        # class to fail with a clear explanation.
         if self.pipeline is None:
-            raise RuntimeError("Model not loaded. Call load() first.")
+            raise RuntimeError("I need to load the anomaly model before I can predict.")
 
-        # I validate input
-        X = self._validate_input(X)
+        validated_input = self._validate_input(X)
 
         try:
-            # I compute raw anomaly score
-            raw_score = self.pipeline.decision_function(X)
-
-            # I convert to calibrated fraud score
-            score = self._compute_score(raw_score)
-
-            # I apply threshold
-            prediction = (score > self.threshold).astype(int)
-
-            return score, prediction
-
-        except Exception as e:
-            logging.error(f"Anomaly prediction failed: {e}")
+            raw_score = self.pipeline.decision_function(validated_input)
+            calibrated_score = self._compute_score(raw_score)
+            prediction = (calibrated_score > self.threshold).astype(int)
+            return calibrated_score, prediction
+        except Exception as exc:
+            logger.error("I could not compute anomaly predictions. Reason: %s", exc)
             raise

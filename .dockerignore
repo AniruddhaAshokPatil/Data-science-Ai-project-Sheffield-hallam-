@@ -1,6 +1,8 @@
 .git
 .github
 .venv
+.DS_Store
+.vscode/
 venv/
 venv_windows_backup/
 __pycache__/
@@ -17,7 +19,3 @@ notebooks/
 data/
 SMSSpamCollection
 models/
-src/train/artifacts/
-*.pth
-*.joblib
-*.pkl

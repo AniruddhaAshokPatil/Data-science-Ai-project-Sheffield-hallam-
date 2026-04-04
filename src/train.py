@@ -1,15 +1,17 @@
+"""I use this file as one command-line entry point for all model training."""
+
 import argparse
 import sys
 from pathlib import Path
 
 
-# I add the project root to sys.path because this top-level trainer can be run
-# directly, and I still want its imports to work from the project package.
+# I add the project root to `sys.path` so I can run this file directly from
+# the terminal and still import the rest of the project package.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.train.model_paths import (
+from src.train.model_paths import (  # noqa: E402
     ANOMALY_MODEL,
     CV_CNN_MODEL,
     NLP_MODEL,
@@ -20,13 +22,13 @@ from src.train.model_paths import (
 
 DEFAULT_CV_CSV = "data/processed/cv/labels.csv"
 DEFAULT_SMS_DATASET = "data/raw/nlp/sms_spam.csv"
-DEFAULT_TABULAR_DATASET = "data/processed/transactions/clean_validation.csv"
-DEFAULT_ANOMALY_DATASET = "data/processed/transactions/clean_main.csv"
+DEFAULT_TABULAR_DATASET = "data/raw/transactions/financial_fraud_detection_dataset.csv"
+DEFAULT_ANOMALY_DATASET = "data/raw/transactions/financial_fraud_detection_dataset.csv"
 
 
 def _require_path(path_str, task_name):
-    # I validate task input paths here so each training branch fails early with
-    # a clear message if the expected dataset is missing.
+    # I validate each incoming path here so the script fails early with a
+    # clear message when a dataset is missing.
     path = Path(path_str)
     if not path.exists():
         raise FileNotFoundError(f"{task_name} dataset not found at: {path}")
@@ -34,8 +36,7 @@ def _require_path(path_str, task_name):
 
 
 def train_cv(args):
-    # I keep each training task in its own helper so this file can behave like
-    # one unified command center for the whole project.
+    # I keep CV training in its own helper so the main flow stays readable.
     from src.train.train_cv_model import train_cv_model
 
     csv_path = _require_path(args.cv_csv, "CV")
@@ -49,12 +50,13 @@ def train_cv(args):
         model_path=str(model_path),
         image_size=args.image_size,
     )
-    return [str(model_path)]
+    metadata_path = model_path.with_suffix(".metadata.pkl")
+    return [str(model_path), str(metadata_path)]
 
 
 def train_nlp(args):
-    # I route NLP training through the project's SMS training helper because
-    # this unified trainer should reuse existing project logic when possible.
+    # I reuse the SMS helper here because it already trains and saves the text
+    # model in a way that fits the rest of this project.
     from src.api.smsspamcollection import run_sms_classifier
 
     dataset_path = _require_path(args.nlp_dataset, "NLP")
@@ -70,8 +72,8 @@ def train_nlp(args):
 
 
 def train_tabular(args):
-    # I keep the tabular branch separate because the tabular model uses a
-    # different dataset shape and training function from NLP or CV.
+    # I keep the tabular branch separate because it uses structured features
+    # instead of text or images.
     from src.train.train_tabular_model import train_tabular_fraud_model
 
     dataset_path = _require_path(args.tabular_dataset, "Tabular")
@@ -80,18 +82,18 @@ def train_tabular(args):
 
 
 def train_anomaly(args):
-    # I keep anomaly training separate too because anomaly detection learns
-    # normal behavior differently from supervised fraud classification.
-    from src.train.train_anomaly_model import train_anomaly_detector
+    # I keep anomaly training separate too because it learns normal patterns
+    # rather than direct fraud labels.
+    from src.train.train_anomaly_model import train_anomaly_model
 
     dataset_path = _require_path(args.anomaly_dataset, "Anomaly")
-    train_anomaly_detector(str(dataset_path))
-    return [str(ANOMALY_MODEL)]
+    summary = train_anomaly_model(input_path=dataset_path)
+    return [summary["model_path"], summary["metadata_path"]]
 
 
 def run_task(task_name, args):
-    # I use a task-to-function mapping so the CLI can choose a training branch
-    # without a long chain of repeated if/elif statements.
+    # I use a dictionary here because it is simpler to read than a long series
+    # of repeated `if` and `elif` checks.
     trainers = {
         "cv": train_cv,
         "nlp": train_nlp,
@@ -99,13 +101,12 @@ def run_task(task_name, args):
         "anomaly": train_anomaly,
     }
     selected_trainer = trainers[task_name]
-    result = selected_trainer(args)
-    return result
+    return selected_trainer(args)
 
 
 def parse_args():
-    # I expose all major training settings here so I can run one task or all
-    # tasks from the command line without editing Python code each time.
+    # I expose the common training settings here so I can run one pipeline or
+    # all pipelines from the command line.
     parser = argparse.ArgumentParser(
         description="Unified trainer for the fraud detection project."
     )
@@ -134,8 +135,8 @@ def parse_args():
 
 
 def main():
-    # I let --task all expand into every training branch because sometimes I
-    # want one command to rebuild multiple artifacts for the whole project.
+    # I let `--task all` expand into every training branch because that gives
+    # me one rebuild command for the whole project.
     args = parse_args()
     if args.task == "all":
         tasks = ["cv", "nlp", "tabular", "anomaly"]
@@ -157,14 +158,13 @@ def main():
                 raise
 
     print("\n=== Training Summary ===")
-    if successes:
-        for task_name, outputs in successes:
-            print(f"{task_name.upper()}: success")
-            for output in outputs:
-                print(f"  - {output}")
-    if failures:
-        for task_name, message in failures:
-            print(f"{task_name.upper()}: failed -> {message}")
+    for task_name, outputs in successes:
+        print(f"{task_name.upper()}: success")
+        for output in outputs:
+            print(f"  - {output}")
+
+    for task_name, message in failures:
+        print(f"{task_name.upper()}: failed -> {message}")
 
     if failures and args.task == "all" and not successes:
         raise SystemExit(1)

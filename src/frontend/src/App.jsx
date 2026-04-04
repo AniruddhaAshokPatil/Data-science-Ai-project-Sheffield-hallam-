@@ -118,11 +118,11 @@ export default function App() {
 
           <div className="panel">
             <div className="panel-header">
-              <h2>Live Transactions</h2>
+              <h2>Live Transaction Results</h2>
               <div className="badges">
-                <RiskBadge label="Total" value={summary.total} color="#64748b" />
-                <RiskBadge label="High Risk" value={summary.highRisk} color="#ef4444" />
-                <RiskBadge label="Avg Risk" value={summary.avgRisk} color="#22c55e" />
+                <RiskBadge label="Transactions" value={summary.total} color="#64748b" />
+                <RiskBadge label="High-Risk Cases" value={summary.highRisk} color="#ef4444" />
+                <RiskBadge label="Average Risk" value={summary.avgRisk} color="#22c55e" />
               </div>
             </div>
             {notice ? <p className="feedback success">{notice}</p> : null}
@@ -133,7 +133,7 @@ export default function App() {
         <section className="right">
           <div className="panel">
             <div className="panel-header">
-              <h2>Controls</h2>
+              <h2>Fraud Testing Controls</h2>
             </div>
             <Controls
               onSubmitTransaction={sendTransaction}

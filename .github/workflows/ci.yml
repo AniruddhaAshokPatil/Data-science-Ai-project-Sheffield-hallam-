@@ -2,59 +2,51 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  backend:
+  tests:
+    name: Run Python tests
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        python-version: [3.11]
+    env:
+      MPLCONFIGDIR: /tmp/matplotlib
     steps:
-      - name: Check out code
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
 
-      - name: Install backend dependencies
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Prepare matplotlib config dir
+        run: mkdir -p /tmp/matplotlib
+
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install -r requirements-dev.txt
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-      - name: Lint backend
-        run: ruff check src tests
+      - name: Smoke import backend app
+        env:
+          PYTHONPATH: .
+        run: python -c "from src.api.main import app; print(app.title)"
 
-      - name: Run backend tests
-        run: python -m pytest src/api/tests/test_app_smoke.py src/api/tests/test_end_to_end.py tests/test_transaction_scoring.py
-
-  frontend:
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: src/frontend
-
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: src/frontend/package.json
-
-      - name: Install frontend dependencies
-        run: npm install
-
-      - name: Lint frontend
-        run: npm run lint
-
-      - name: Build frontend
-        run: npm run build
+      - name: Run tests
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -q

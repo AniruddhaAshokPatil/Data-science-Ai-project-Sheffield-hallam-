@@ -1,8 +1,5 @@
-# ============================================
-# MIDV-500 IMAGE FLATTENER (STEP-BY-STEP SAFE)
-# ============================================
+"""I flatten the MIDV500 image folders into one simpler training folder."""
 
-# I am importing libraries to work with file system
 import os
 import shutil
 
@@ -18,43 +15,44 @@ DEST_DIR = "data/raw/cv/midv500/images"
 # experiments instead of trying to copy everything at once.
 MAX_IMAGES = 3000
 
-# I am creating destination folder if it does not exist
-os.makedirs(DEST_DIR, exist_ok=True)
+def flatten_images():
+    # I create the destination folder first because the copy step needs a
+    # place to put the flattened image files.
+    os.makedirs(DEST_DIR, exist_ok=True)
 
-# I use a counter so the flattened images get clean, consistent file names.
-image_counter = 0
+    image_counter = 0
 
-# I am walking through all folders in dataset
-for root, dirs, files in os.walk(SOURCE_DIR):
+    # I walk through every folder under the raw dataset so I can find images
+    # even when they are deeply nested.
+    for root, _, files in os.walk(SOURCE_DIR):
+        for file_name in files:
+            is_image_file = file_name.lower().endswith((".jpg", ".jpeg", ".png"))
+            if not is_image_file:
+                continue
 
-    # I am checking every file inside each folder
-    for file in files:
-
-        # I am selecting only image files
-        is_image_file = file.lower().endswith((".jpg", ".jpeg", ".png"))
-        if is_image_file:
-
-            # I stop if I reach max limit
             if image_counter >= MAX_IMAGES:
                 break
 
-            # I am building full file path
-            source_path = os.path.join(root, file)
-
-            # I create a new sequential filename so later scripts do not depend
-            # on the original nested folder names.
+            source_path = os.path.join(root, file_name)
             new_filename = f"img_{image_counter:05d}.jpg"
-            dest_path = os.path.join(DEST_DIR, new_filename)
+            destination_path = os.path.join(DEST_DIR, new_filename)
 
-            # I am copying image into flat folder
-            shutil.copy(source_path, dest_path)
-
-            # I increment counter
+            # I copy the file instead of moving it because I want to keep the
+            # original dataset untouched.
+            shutil.copy(source_path, destination_path)
             image_counter += 1
 
-    # I break outer loop as well when limit reached
-    if image_counter >= MAX_IMAGES:
-        break
+        if image_counter >= MAX_IMAGES:
+            break
 
-# I print total images copied
-print(f"Done. Total images copied: {image_counter}")
+    return image_counter
+
+
+def main():
+    # I keep the terminal entry point small so the script is easier to explain.
+    image_counter = flatten_images()
+    print(f"Done. Total images copied: {image_counter}")
+
+
+if __name__ == "__main__":
+    main()

@@ -16,8 +16,11 @@ __pycache__/
 .mypy_cache/
 .coverage
 htmlcov/
+.ruff_cache/
 .env
 .env.local
 true.env
 src/frontend/.env
 src/frontend/.env.local
+~$*.docx
+.github/copilot-instructions.md

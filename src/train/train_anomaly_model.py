@@ -5,16 +5,16 @@ import pickle
 
 import joblib
 import numpy as np
-import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL
+from src.train.preprocess import load_transaction_training_dataframe
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT = PROJECT_ROOT / "data" / "processed" / "transactions" / "clean_validation.csv"
+DEFAULT_INPUT = PROJECT_ROOT / "data" / "raw" / "transactions" / "financial_fraud_detection_dataset.csv"
 TARGET_COLUMN = "is_fraud"
 MAX_TRAINING_ROWS = 200000
 
@@ -27,19 +27,14 @@ def compute_anomaly_score(raw_score, min_val, max_val):
     return 1 - scaled
 
 
-def _load_training_frame(input_path: Path) -> pd.DataFrame:
+def _load_training_frame(input_path: Path):
     # I keep input loading in one helper so I can fail clearly when the issue's
     # training dataset is missing or shaped differently than expected.
     input_path = Path(input_path)
     if not input_path.exists():
         raise FileNotFoundError(f"Training dataset not found at: {input_path}")
 
-    dataframe = pd.read_csv(input_path)
-    if TARGET_COLUMN not in dataframe.columns:
-        raise ValueError(f"Training dataset must contain '{TARGET_COLUMN}'.")
-    if dataframe.isnull().sum().sum() > 0:
-        raise ValueError("I found missing values in the anomaly training dataset.")
-
+    dataframe = load_transaction_training_dataframe(str(input_path))
     return dataframe
 
 
@@ -49,8 +44,8 @@ def train_anomaly_model(
     metadata_output: Path = ANOMALY_METADATA,
     max_rows: int = MAX_TRAINING_ROWS,
 ) -> dict:
-    # I train on the labeled validation-style dataset here because it already
-    # contains the structured fraud features this project serves at runtime.
+    # I train on the requested transaction CSV here, and I now support the raw
+    # financial fraud dataset directly by cleaning it before model fitting.
     dataframe = _load_training_frame(input_path)
     if max_rows and len(dataframe) > max_rows:
         # I cap training rows here so the project can still retrain locally on

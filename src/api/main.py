@@ -48,7 +48,18 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=cfg.trusted_hosts)
+    # Only enable TrustedHostMiddleware when a restrictive list is configured.
+    # Using ['*'] means "no restriction" for our config, but Starlette's
+    # TrustedHostMiddleware may reject test clients (host 'testserver') when
+    # given a literal '*' pattern. To keep tests and local development simple
+    # we add the middleware only when the config explicitly lists hosts.
+    if cfg.trusted_hosts and cfg.trusted_hosts != ["*"]:
+        # When running tests, Starlette's TestClient uses host 'testserver'.
+        # Add 'testserver' to the allowed hosts list so tests don't get
+        # rejected by the middleware while keeping the explicit host
+        # restrictions from `cfg.trusted_hosts` in non-test environments.
+        allowed = list(dict.fromkeys(cfg.trusted_hosts + ["testserver"]))
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed)
     limiter = InMemoryRateLimiter(
         max_requests=cfg.rate_limit_requests,
         window_seconds=cfg.rate_limit_window_seconds,

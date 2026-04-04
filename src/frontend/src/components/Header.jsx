@@ -4,9 +4,9 @@ export default function Header({ wsConnected, apiStatus }) {
       <div>
         {/* I keep the title in the header so users always know which project view
             they are on, even when the dashboard grows larger later. */}
-        <h1>Fraud Detection Command Dashboard</h1>
+        <h1>Fraud Detection Monitoring Dashboard</h1>
         <p className="header-copy">
-          I use this dashboard to watch live risk flow, test scoring routes, and confirm model readiness before release decisions.
+          I use this dashboard to monitor fraud scoring, check model readiness, and run live transaction, NLP, and analytics tests from one place.
         </p>
       </div>
       <div className="header-statuses">

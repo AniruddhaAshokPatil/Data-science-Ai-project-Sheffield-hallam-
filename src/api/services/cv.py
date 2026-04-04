@@ -1,101 +1,67 @@
-# src/api/services/cv.py
+"""I keep the reusable computer-vision fraud model loader here for the API."""
 
-import os
-import torch
-import numpy as np
 import logging
-import pickle
+
+import numpy as np
+import torch
 from PIL import Image
-from torchvision import transforms, models
-from torch import nn
+from torchvision import transforms
 
-# -------------------------------
-# STEP 1: Logging
-# -------------------------------
+from src.models.simple_cnn import SimpleCNN
+from src.train.model_paths import CV_CNN_MODEL
 
-logging.basicConfig(level=logging.INFO)
 
-# -------------------------------
-# STEP 2: CV Model Wrapper
-# -------------------------------
+logger = logging.getLogger(__name__)
+
 
 class CVModel:
-    """
-    I manage:
-    - loading model
-    - preprocessing images
-    - predicting fraud score
-    """
+    """I manage loading, preprocessing, and scoring for image fraud checks."""
 
-    def __init__(self, model_path="models/"):
+    def __init__(self, model_path=CV_CNN_MODEL):
+        # I save the model path and device here so I can explain clearly where
+        # the weights come from and whether I am using CPU or GPU.
         self.model_path = model_path
         self.model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # -------------------------------
-    # STEP 3: Load Model
-    # -------------------------------
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225],
+                ),
+            ]
+        )
 
     def load(self):
+        # I rebuild the same SimpleCNN architecture from training before I load
+        # the saved state dictionary into it.
         try:
-            # I rebuild SAME architecture as training
-            self.model = models.resnet18(weights=None)
-            self.model.fc = nn.Linear(self.model.fc.in_features, 1)
-
-            # I load trained weights
-            self.model.load_state_dict(
-                torch.load(os.path.join(self.model_path, "cv_model.pth"), map_location=self.device)
-            )
-
+            self.model = SimpleCNN()
+            state_dict = torch.load(self.model_path, map_location=self.device)
+            self.model.load_state_dict(state_dict)
             self.model.to(self.device)
             self.model.eval()
-
-            logging.info("CV model loaded successfully.")
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to load CV model: {e}")
-
-        # -------------------------------
-        # STEP 4: Define Transform (MATCH TRAINING)
-        # -------------------------------
-
-        self.transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225]
-            )
-        ])
-
-    # -------------------------------
-    # STEP 5: Predict Function
-    # -------------------------------
+            logger.info("I loaded the CV model from %s.", self.model_path)
+        except Exception as exc:
+            raise RuntimeError(f"I could not load the CV model: {exc}") from exc
 
     def predict(self, image_path):
-        """
-        I take an image path and return:
-        - fraud score [0,1]
-        """
-
+        # I stop early if the model is missing because that produces a clearer
+        # teaching-friendly error message than a low-level PyTorch failure.
         if self.model is None:
-            raise RuntimeError("Model not loaded. Call load() first.")
+            raise RuntimeError("I need to load the CV model before I can predict.")
 
         try:
-            # I load image
             image = Image.open(image_path).convert("RGB")
-
-            # I apply same transform as training
-            image = self.transform(image).unsqueeze(0).to(self.device)
+            image_tensor = self.transform(image).unsqueeze(0).to(self.device)
 
             with torch.no_grad():
-                logits = self.model(image)
+                logits = self.model(image_tensor)
+                probability = torch.sigmoid(logits).item()
 
-                # I convert logits → probability
-                prob = torch.sigmoid(logits).cpu().numpy()[0][0]
-
-            return np.array([prob])
-
-        except Exception as e:
-            logging.error(f"CV prediction failed: {e}")
+            return np.array([probability], dtype=float)
+        except Exception as exc:
+            logger.error("I could not score the image %s. Reason: %s", image_path, exc)
             raise

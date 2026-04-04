@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from src.api.config import cfg
+from src.scoring.cv_fraud_service import get_cv_runtime_status
 from src.train.model_paths import ANOMALY_METADATA, ANOMALY_MODEL, CV_CNN_MODEL, NLP_MODEL, NLP_VECTORIZER
 
 
@@ -64,6 +65,11 @@ def get_readiness_report() -> dict[str, Any]:
             required=False,
             description="Analytics dataset",
         ),
+        "financial_raw_dataset": _file_status(
+            cfg.financial_raw_csv,
+            required=False,
+            description="Raw financial fraud dataset",
+        ),
         "outputs_directory": _directory_status(
             cfg.outputs_dir,
             required=True,
@@ -99,15 +105,17 @@ def get_readiness_report() -> dict[str, Any]:
             required=False,
             description="CV model artifact",
         ),
+        "cv_inference_runtime": get_cv_runtime_status(),
     }
 
     not_ready = [name for name, item in components.items() if item["status"] == "not_ready"]
     degraded = [name for name, item in components.items() if item["status"] == "degraded"]
+    fallback = [name for name, item in components.items() if item["status"] == "fallback"]
 
     if not_ready:
         overall_status = "not_ready"
         ready = False
-    elif degraded:
+    elif degraded or fallback:
         overall_status = "degraded"
         ready = True
     else:
@@ -123,6 +131,7 @@ def get_readiness_report() -> dict[str, Any]:
         "summary": {
             "ready_count": sum(1 for item in components.values() if item["status"] == "ready"),
             "degraded_count": len(degraded),
+            "fallback_count": len(fallback),
             "not_ready_count": len(not_ready),
         },
     }

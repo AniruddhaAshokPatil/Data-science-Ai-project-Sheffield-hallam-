@@ -9,8 +9,8 @@ export default function LiveTable({ rows }) {
   if (!rows?.length) {
     return (
       <div className="empty-state">
-        <strong>No transactions yet.</strong>
-        <p>I will show scored results here as soon as the API or WebSocket stream sends them.</p>
+        <strong>No scored transactions yet.</strong>
+        <p>I will show live transaction results here after I run a frontend check or receive a WebSocket event from the backend.</p>
       </div>
     );
   }
@@ -21,12 +21,12 @@ export default function LiveTable({ rows }) {
         <thead>
           <tr>
             <th>Timestamp (UTC)</th>
-            <th>Profile</th>
-            <th>Risk</th>
-            <th>Tabular Prob</th>
-            <th>Ratio (norm)</th>
-            <th>Dist (norm)</th>
-            <th>Threshold</th>
+            <th>Transaction Profile</th>
+            <th>Risk Score</th>
+            <th>Tabular Signal</th>
+            <th>Purchase Ratio</th>
+            <th>Distance Signal</th>
+            <th>Decision Threshold</th>
           </tr>
         </thead>
         <tbody>

@@ -1,3 +1,6 @@
+"""I expose the SMS spam prediction route in this file."""
+
+import joblib
 from pathlib import Path
 from threading import Lock
 
@@ -6,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from src.api.config import cfg
 from src.api.logger import logger
+from src.data.preprocess_nlp import load_sms_dataset
+from src.train.model_paths import NLP_MODEL, NLP_VECTORIZER
 
 router = APIRouter(prefix="/nlp", tags=["nlp"])
 
@@ -27,9 +32,17 @@ def _ensure_nlp_model_ready():
             return True, "ready"
 
         try:
-            import pandas as pd
             from sklearn.feature_extraction.text import CountVectorizer
             from sklearn.naive_bayes import MultinomialNB
+
+            # I prefer the saved artifacts first because loading them is faster
+            # and more stable than retraining on every new API process.
+            if NLP_MODEL.exists() and NLP_VECTORIZER.exists():
+                _model = joblib.load(NLP_MODEL)
+                _vec = joblib.load(NLP_VECTORIZER)
+                _nlp_status = {"ready": True, "reason": "ready"}
+                logger.info("I loaded the saved NLP model artifacts.")
+                return True, "ready"
 
             sms_path = Path(cfg.sms_corpus)
             if not sms_path.exists():
@@ -39,12 +52,17 @@ def _ensure_nlp_model_ready():
                 }
                 return False, _nlp_status["reason"]
 
-            df = pd.read_csv(sms_path, sep="\t", names=["label", "message"])
-            df["y"] = df["label"].map({"ham": 0, "spam": 1})
+            # I use the shared dataset loader here because the raw SMS file can
+            # contain wrapped lines and awkward formatting.
+            dataframe = load_sms_dataset(sms_path)
+            dataframe["message"] = dataframe["message"].fillna("").astype(str)
+            dataframe["y"] = dataframe["label"].map({"ham": 0, "spam": 1})
+            dataframe = dataframe.dropna(subset=["y"])
+
             _vec = CountVectorizer()
-            X = _vec.fit_transform(df["message"])
-            y = df["y"].astype(int)
-            _model = MultinomialNB().fit(X, y)
+            features = _vec.fit_transform(dataframe["message"])
+            labels = dataframe["y"].astype(int)
+            _model = MultinomialNB().fit(features, labels)
             _nlp_status = {"ready": True, "reason": "ready"}
             logger.info("I trained the NLP Naive Bayes model from the SMS corpus.")
             return True, "ready"
@@ -58,6 +76,19 @@ def _ensure_nlp_model_ready():
             }
             logger.warning(_nlp_status["reason"])
             return False, _nlp_status["reason"]
+
+
+def _build_prediction_response(message: str):
+    # I keep the final prediction formatting in one helper because that makes
+    # the route itself shorter and easier to explain.
+    transformed_message = _vec.transform([message])
+    prediction = int(_model.predict(transformed_message)[0])
+    verdict = "SPAM" if prediction == 1 else "SAFE"
+    return {
+        "ready": True,
+        "prediction": prediction,
+        "verdict": verdict,
+    }
 
 
 class TextIn(BaseModel):
@@ -77,9 +108,4 @@ def predict_text(input: TextIn):
             "ready": False,
             "message": reason,
         }
-    # I transform the incoming text with the same vectorizer used at training
-    # time so the model sees the message in the format it expects.
-    Xq = _vec.transform([input.message])
-    pred = int(_model.predict(Xq)[0])
-    verdict = "SPAM" if pred == 1 else "SAFE"
-    return {"ready": True, "prediction": pred, "verdict": verdict}
+    return _build_prediction_response(input.message)

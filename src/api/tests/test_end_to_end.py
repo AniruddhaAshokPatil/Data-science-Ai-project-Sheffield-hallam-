@@ -1,6 +1,8 @@
 import os
 import time
 import unittest
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from fastapi import FastAPI
@@ -9,6 +11,7 @@ from src.api.main import create_app
 from src.api.routers.transactions import router as transactions_router
 
 TIMEOUT_THRESHOLD = 0.5
+CV_SAMPLE_IMAGE = "data/processed/cv/test/original/img_00185_orig.jpg"
 
 NORMAL_TRANSACTION = {
     "features": {
@@ -119,3 +122,42 @@ def test_websocket_scores_and_broadcasts_transaction_payload():
     assert "details" in payload
     assert payload["details"]["tabular_prob"] >= 0
     assert latency < TIMEOUT_THRESHOLD
+
+
+def test_nlp_route_predicts_spam_or_safe():
+    """
+    I call the NLP route directly here because I want automated proof that the
+    text-scoring endpoint returns a usable prediction payload.
+    """
+    client = TestClient(create_app())
+    response = client.post(
+        "/nlp/predict",
+        json={"message": "URGENT: your bank account is locked, click now"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ready"] is True
+    assert payload["prediction"] in {0, 1}
+    assert payload["verdict"] in {"SPAM", "SAFE"}
+
+
+def test_cv_route_scores_real_image_and_reports_mode():
+    """
+    I call the CV route with a real project image because I want to prove the
+    endpoint works in either deep-learning or fallback mode.
+    """
+    if not Path(CV_SAMPLE_IMAGE).exists():
+        raise FileNotFoundError(f"I expected a CV sample image at {CV_SAMPLE_IMAGE}.")
+
+    client = TestClient(create_app())
+    response = client.post(
+        "/cv/predict",
+        json={"image_path": CV_SAMPLE_IMAGE},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert 0.0 <= payload["fraud_score"] <= 1.0
+    assert payload["verdict"] in {"fraud_suspected", "likely_genuine"}
+    assert payload["details"]["cv_mode"] in {"deep_learning", "heuristic_fallback"}

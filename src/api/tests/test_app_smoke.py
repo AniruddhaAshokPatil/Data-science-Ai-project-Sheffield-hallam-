@@ -47,6 +47,11 @@ def test_readiness_route_returns_structured_component_statuses():
     assert "components" in payload
     assert "transaction_api" in payload["components"]
     assert "outputs_directory" in payload["components"]
+    assert "cv_inference_runtime" in payload["components"]
+    assert payload["components"]["cv_inference_runtime"]["mode"] in {
+        "deep_learning",
+        "heuristic_fallback",
+    }
 
 
 def test_websocket_ping_returns_pong():
