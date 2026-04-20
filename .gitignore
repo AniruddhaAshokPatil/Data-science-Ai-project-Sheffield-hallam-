@@ -22,5 +22,13 @@ htmlcov/
 true.env
 src/frontend/.env
 src/frontend/.env.local
+.vscode/
+$RECYCLE.BIN/
 ~$*.docx
 .github/copilot-instructions.md
+# I ignore local claim submissions and uploaded evidence because they are
+# generated while I demo the insurance workflow and should not be submitted.
+data/raw/insurance_claims/submitted_claims.csv
+data/raw/insurance_claims/evidence_manifest.csv
+data/raw/insurance_claims/uploads/
+data/processed/shieldwise_runtime.db

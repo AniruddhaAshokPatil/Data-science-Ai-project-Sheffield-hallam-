@@ -1,0 +1,23 @@
+{
+  "dataset_path": "data/raw/insurance_claims/claim_email_ham_spam.csv",
+  "rows": 240,
+  "train_rows": 192,
+  "test_rows": 48,
+  "selected_features": 220,
+  "models": {
+    "MultinomialNB": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0
+    },
+    "RandomForest": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "roc_auc": 1.0
+    }
+  }
+}

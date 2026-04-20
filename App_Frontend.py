@@ -289,9 +289,9 @@ def extract_stat_features(text, keywords):
         "phishing_keyword_count": sum(1 for kw in keywords if kw in text.lower())
     }
 
-def predict_email(text, model_choice, nlp_models, nlp):
+def predict_email(text, model_choice, nlp_models, nlp=None):
     cleaned   = pre_clean(text)
-    processed = pos_filter(nlp(cleaned))
+    processed = cleaned
     tfidf_vec = nlp_models['tfidf'].transform([processed])
     stat_feat = extract_stat_features(text, nlp_models['keywords'])
     stat_sp   = csr_matrix(pd.DataFrame([stat_feat]).values)
@@ -301,7 +301,7 @@ def predict_email(text, model_choice, nlp_models, nlp):
     pred      = model.predict(final_inp)[0]
     prob      = model.predict_proba(final_inp)[0][1]
     return {"pred": int(pred), "prob": float(prob),
-            "label": "PHISHING" if pred==1 else "LEGITIMATE",
+            "label": "SUSPICIOUS CLAIM EMAIL" if pred==1 else "LEGITIMATE CLAIM EMAIL",
             "processed": processed, "stat_feat": stat_feat,
             "final_inp": final_inp, "model": model}
 
@@ -334,15 +334,15 @@ def render_shap(shap_result):
     ax.set_yticks(range(len(names))); ax.set_yticklabels(names, fontsize=8.5, color='#aabbcc')
     ax.invert_yaxis()
     ax.axvline(0, color='rgba(255,255,255,0.1)', lw=0.8, ls='--')
-    ax.set_xlabel('SHAP Value  (positive = phishing signal  |  negative = legitimate signal)',
+    ax.set_xlabel('SHAP Value  (positive = suspicious-claim signal  |  negative = legitimate-claim signal)',
                   fontsize=8, color='#8899aa')
     ax.set_title('Feature Attribution', fontsize=10, fontweight='bold', color='#f5f5f0', pad=10)
     ax.tick_params(axis='x', colors='#8899aa', labelsize=8)
     ax.spines[['top','right','left']].set_visible(False)
     ax.spines['bottom'].set_color('rgba(255,255,255,0.08)')
     ax.grid(axis='x', alpha=0.07, color='white')
-    p1 = mpatches.Patch(color='#c0392b', label='Phishing indicator')
-    p2 = mpatches.Patch(color='#2980b9', label='Legitimate indicator')
+    p1 = mpatches.Patch(color='#c0392b', label='Suspicious-claim indicator')
+    p2 = mpatches.Patch(color='#2980b9', label='Legitimate-claim indicator')
     ax.legend(handles=[p1,p2], fontsize=8, facecolor='#0e2040',
               edgecolor='none', labelcolor='#aabbcc', loc='lower right')
     plt.tight_layout(); return fig
@@ -521,16 +521,16 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 
 
-# TAB 1 — PHISHING EMAIL
+# TAB 1 — CLAIM EMAIL NLP
 
 with tab1:
-    section_label("Email Fruad Analysis")
+    section_label("Claim Email Analysis")
     left, right = st.columns([1.1, 0.9], gap="large")
 
     with left:
         st.markdown('<div class="card"><div class="card-title">Email Content</div>', unsafe_allow_html=True)
         email_text = st.text_area("Email", height=220,
-            placeholder="Paste the full email text — subject, body, any URLs...",
+            placeholder="Paste the full claim email text — subject, body, and any supporting details...",
             label_visibility="collapsed")
         col_a, col_b = st.columns(2)
         with col_a: nlp_algo  = st.selectbox("Algorithm", ["Naive Bayes", "Random Forest"])
@@ -547,13 +547,12 @@ with tab1:
             else:
                 with st.spinner("Analysing..."):
                     try:
-                        nlp = load_spacy()
-                        res = predict_email(email_text, nlp_algo, nlp_models, nlp)
+                        res = predict_email(email_text, nlp_algo, nlp_models)
                         prob, pred = res['prob'], res['pred']
                         css  = "danger" if pred==1 else "safe"
-                        lbl  = "FRAUD DETECTED" if pred==1 else "LEGITIMATE EMAIL"
+                        lbl  = "SUSPICIOUS CLAIM EMAIL" if pred==1 else "LEGITIMATE CLAIM EMAIL"
                         pct  = round(prob*100 if pred==1 else (1-prob)*100, 1)
-                        verdict_panel(lbl, f"Spam probability: {round(prob*100,1)}%",
+                        verdict_panel(lbl, f"Suspicious-email probability: {round(prob*100,1)}%",
                                       css, pct, f"Algorithm: {nlp_algo}  |  Confidence: {pct}%")
                         sf = res['stat_feat']
                         metric_tiles([
@@ -573,11 +572,10 @@ with tab1:
     if run_nlp and email_text.strip() and nlp_models.get('loaded') and show_shap:
         gold_divider()
         section_label("SHAP Feature Attribution")
-        alert_info("Red bars push toward phishing. Blue bars push toward legitimate.")
+        alert_info("Red bars push toward suspicious claim-email signals. Blue bars push toward legitimate claim-email signals.")
         with st.spinner("Computing SHAP values..."):
             try:
-                nlp    = load_spacy()
-                res    = predict_email(email_text, nlp_algo, nlp_models, nlp)
+                res    = predict_email(email_text, nlp_algo, nlp_models)
                 shap_r = compute_shap(res, nlp_models)
                 if shap_r['success']:
                     fig = render_shap(shap_r)
@@ -587,7 +585,7 @@ with tab1:
                         st.dataframe(pd.DataFrame({
                             'Feature':   shap_r['names'],
                             'SHAP':      [round(v,5) for v in shap_r['values']],
-                            'Direction': ['Phishing' if v>0 else 'Legitimate' for v in shap_r['values']]
+                            'Direction': ['Suspicious' if v>0 else 'Legitimate' for v in shap_r['values']]
                         }), use_column_width=True, hide_index=True)
                 else:
                     alert_warn(f"SHAP unavailable: {shap_r['error']}. Run: pip install shap")

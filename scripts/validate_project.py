@@ -149,11 +149,11 @@ def check_local_data_files():
     print_title("3. Checking Local Data Folder")
 
     data_files = [
-        os.path.join(DATA_DIR, "raw", "nlp", "SMSSpamCollection.csv"),
-        os.path.join(DATA_DIR, "raw", "nlp", "sms_spam.csv"),
+        os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_email_ham_spam.csv"),
+        os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed.csv"),
         os.path.join(DATA_DIR, "raw", "transactions", "financial_fraud_detection_dataset.csv"),
         os.path.join(DATA_DIR, "raw", "transactions", "card_transdata.csv"),
-        os.path.join(DATA_DIR, "raw", "cv", "Receipt_Fraud_Dataset"),
+        os.path.join(DATA_DIR, "raw", "cv", "Receipt_Fraud_Datasets"),
     ]
 
     all_ok = True

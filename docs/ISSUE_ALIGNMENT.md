@@ -40,9 +40,9 @@ In this section, I am looking at the issues that are still open and comparing th
 
 | Issue | Title | Status vs current repo | Matching files |
 | --- | --- | --- | --- |
-| #23 | Create React Frontend Skeleton | Out of sync with current tree; tracked UI entrypoint is Streamlit, not React source | `App_Frontend.py`, `src/frontend/dist/index.html` |
-| #24 | Build Fraud Monitoring Dashboard Components | Out of sync with current tree; no tracked React source components are present | `App_Frontend.py` |
-| #25 | Connect Frontend to WebSocket Alert Stream | Blocked by missing tracked React source and missing tracked FastAPI source | No tracked source implementation available in current tree |
+| #23 | Create React Frontend Skeleton | Implemented in current tree | `src/frontend/package.json`, `src/frontend/vite.config.js`, `src/frontend/index.html`, `src/frontend/src/main.jsx`, `src/frontend/src/App.jsx` |
+| #24 | Build Fraud Monitoring Dashboard Components | Implemented in current tree | `src/frontend/src/App.jsx`, `src/frontend/src/styles.css`, `src/frontend/src/data/mockData.js` |
+| #25 | Connect Frontend to WebSocket Alert Stream | Partially aligned; frontend now has a live alert layer and is ready for a real WebSocket client | `src/frontend/src/App.jsx`, `src/frontend/src/data/mockData.js` |
 | #26 | End-to-End Integration Test (Backend + Frontend + Models) | Blocked by missing tracked backend/frontend source; no tracked end-to-end test source is present | No tracked integration test source available in current tree |
 | #27 | Model Evaluation & Visualisation Notebook | Partially aligned; modality-specific notebooks exist, but no unified evaluation notebook is tracked | `backend/Fraud_Receipt_Detection_CV.ipynb`, `backend/Phisihing_Model_NLP.ipynb`, `backend/Midv2019_ID_Card_Fraud_Detection.ipynb` |
 | #28 | Ethics & Responsible AI Section | Partially aligned; brief ethics notes exist, but no dedicated markdown/report section is tracked | `readme.md` |
