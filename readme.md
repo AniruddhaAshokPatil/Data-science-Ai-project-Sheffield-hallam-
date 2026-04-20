@@ -1,6 +1,8 @@
 #  Multimodal Fraud Detection System AI
 
-An AI-powered fraud detection system built with Streamlit that combines NLP and Computer Vision to detect phishing emails, fraudulent receipts, and fake identity documents.
+I built this project as a Streamlit-based fraud detection app that brings together NLP and computer vision so I can look at phishing emails, suspicious receipts, and fake identity documents in one place.
+
+I use the local `data/` folder in this repo as the main working data area for the project, so the raw and processed files live under paths like `data/raw/` and `data/processed/`.
 
 > **Academic Research Project — MSc AI & Data Science 2024, Sheffield Hallam University**
 
@@ -19,7 +21,7 @@ An AI-powered fraud detection system built with Streamlit that combines NLP and 
 
 ---
 
-  Detection Modules
+## Detection Modules
 
 | Module | Models | Dataset |
 |--------|--------|---------|
@@ -35,6 +37,13 @@ An AI-powered fraud detection system built with Streamlit that combines NLP and 
 project/
 │
 ├── App_Frontend.py                          # Main Streamlit application
+├── requirements.txt                         # Python packages I need to run the app
+├── scripts/validate_project.py              # Quick project health check
+├── docs/                                    # Project notes and traceability
+│
+├── data/                                   # Main project data folder
+│   ├── raw/
+│   └── processed/
 │
 ├── backend/saved_models/                   # NLP & ID card models
 │   ├── mnb_model.pkl
@@ -47,7 +56,7 @@ project/
 │   ├── model_config.json
 │   ├── phishing_keywords.json
 │   ├── stat_feature_cols.json
-│   └── mobilenet_final.h5
+│   ├── mobilenet_final.h5
 │   └── resnet_final.h5
 │
 └── backend/receipts_models/                # Receipt CV models
@@ -61,6 +70,8 @@ project/
 
 ##  Requirements
 
+If I want the setup to go as smoothly as possible, these are the versions I would use:
+
 - Python 3.10
 - TensorFlow 2.19
 - Keras 3.x
@@ -68,7 +79,26 @@ project/
 
 ---
 
+##  Project Status
+
+What I have in the tracked `main` branch right now is a **Streamlit-first multimodal prototype** with:
+
+- a Streamlit interface in `App_Frontend.py`
+- data-preparation scripts in `src/data/`
+- training notebooks and saved model artifacts in `backend/`
+
+Some of the older GitHub issues talk about a bigger FastAPI + React + WebSocket setup, but when I compare those issues with the files that are actually tracked here, that is not the full shape of the repository at the moment.
+
+If I want to explain how the repository and the GitHub issues line up, these are the two files I would point someone to:
+
+- `docs/PROJECT_TRACEABILITY.md`
+- `docs/ISSUE_ALIGNMENT.md`
+
+---
+
 ##  How to Run
+
+If I were walking someone through the project from scratch, these are the steps I would give them to get the app running locally:
 
 ### 1. Clone or download the project
 
@@ -87,63 +117,69 @@ conda activate fraud_app
 ### 3. Install dependencies
 
 ```bash
-pip install tensorflow==2.19 keras
-pip install "numpy<2.0"
-pip install pandas scikit-learn streamlit shap==0.43
-pip install opencv-python pillow scipy matplotlib seaborn
-pip install spacy
+pip install -r requirements.txt
 python -m spacy download en_core_web_sm
 ```
 
 ### 4. Ensure model files are in place
 
-Make sure all model files exist at the paths shown in the **Project Structure** section above. The app will show a red status dot in the sidebar for any module whose models are missing.
+Before I launch the app, I make sure the model files shown in the **Project Structure** section are actually there. I also keep the project datasets inside the local `data/` folder, because that is the main working data area this repo now uses. If something is missing, the app will show a red status dot in the sidebar, and any unavailable analysis actions will stay disabled instead of failing partway through.
 
-### 5. Run the app
+### 5. Run the project check
 
 ```bash
-streamlit run App.py
+python scripts/validate_project.py
 ```
 
-Then open your browser at `http://localhost:8501`
+I added this script so I can quickly check that the main files, Python packages, and saved model files are all in place before I start the app.
+
+### 6. Run the app
+
+```bash
+streamlit run App_Frontend.py
+```
+
+Then I open my browser at `http://localhost:8501`
+
+If I rebuild or add model files while the app is already open, I can use the **Reload Model Status** button in the sidebar to refresh the model loaders.
 
 ---
 
 ##  Module Details
 
 ###  Phishing Email Analysis (Tab 1)
-- Paste any email content into the text area
-- Choose between **Naive Bayes** or **Random Forest**
-- Optionally enable **SHAP Explanation** to see which words drove the prediction
-- The pipeline: pre-cleaning → spaCy lemmatisation → TF-IDF → Chi-squared selection → classification
+- I paste the email content into the text area
+- I pick either **Naive Bayes** or **Random Forest**
+- I can turn on **SHAP Explanation** if I want to see which words pushed the prediction
+- Behind the scenes, I am using this flow: pre-cleaning → spaCy lemmatisation → TF-IDF → Chi-squared selection → classification
 
 ###  Receipt Fraud Detection (Tab 2)
-- Upload a receipt image (JPG, JPEG, PNG, BMP)
-- Choose between **MobileNetV2** or **ResNet50**
-- The model outputs a fraud probability and verdict (Legitimate / Fraudulent)
+- I upload a receipt image (`JPG`, `JPEG`, `PNG`, or `BMP`)
+- I choose between **MobileNetV2** and **ResNet50**
+- The model then gives me a fraud probability and a simple verdict: legitimate or fraudulent
 
 ###  ID Card Fraud Detection (Tab 3)
-- Upload an ID card image (JPG, JPEG, PNG, TIF, TIFF, BMP)
-- The pipeline extracts 128-dim features using both CNN models, then applies One-Class SVM anomaly detection
-- Returns a three-tier verdict: **Genuine**, **Suspicious**, or **Fake**
+- I upload an ID card image (`JPG`, `JPEG`, `PNG`, `TIF`, `TIFF`, or `BMP`)
+- The app pulls features from both CNN models and then runs One-Class SVM anomaly detection on top
+- The final result comes back as one of three labels: **Genuine**, **Suspicious**, or **Fake**
 
 ###  Dataset Info (Tab 4)
-- Overview of all three datasets, pipeline steps, and ethical considerations
+- I use this tab to give a quick overview of the three datasets, the pipeline steps, and the ethical side of the project
 
 ---
 
 ##  Known Dependency Notes
 
-- **NumPy**: Must be `< 2.0` — pandas and other packages conflict with NumPy 2.x
-- **Keras**: Must be **Keras 3.x** — the `.keras` models were saved on Colab with Keras 3 and will fail to load on Keras 2.x
-- **Streamlit**: Use a recent version; older versions do not support `use_container_width` in `st.image()`
+- **NumPy**: keep it below `2.0`, because pandas and a few other packages can clash with NumPy 2.x
+- **Keras**: use **Keras 3.x**, because the `.keras` models were saved that way in Colab and may fail on Keras 2.x
+- **Streamlit**: use a fairly recent version, because older versions do not support `use_container_width` in `st.image()`
 
 ---
 
 ##  Ethical Considerations
 
-- Models may produce false positives for legitimate users
-- Training data may underrepresent certain demographics or document types
-- All high-risk verdicts should be reviewed by a qualified person before any consequential decision
-- This system does not store submitted content
-- Production deployment must comply with GDPR and applicable law
+- I recognise that the models can still flag genuine users by mistake, so I should never treat the results as perfect
+- I also recognise that the training data may not fully represent every group, document type, or real-world fraud pattern
+- If I get a high-risk result, I should expect a real person to review it before any important decision is made
+- I am not treating this app as a tool for storing submitted content as part of normal use
+- If I ever moved this beyond a student project, I would need to make sure it followed GDPR and any other relevant legal or compliance rules

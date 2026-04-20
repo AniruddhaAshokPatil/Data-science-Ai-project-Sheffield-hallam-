@@ -1,0 +1,119 @@
+{
+  "dataset_name": "financial_fraud_detection_dataset.csv",
+  "dataset_label": "Main Transaction Dataset",
+  "model_name": "Random Forest",
+  "description": "I use this model to check the richer transaction behaviour dataset.",
+  "feature_columns": [
+    "amount",
+    "time_since_last_transaction",
+    "spending_deviation_score",
+    "velocity_score",
+    "geo_anomaly_score",
+    "hour",
+    "day_of_week",
+    "month",
+    "transaction_type_deposit",
+    "transaction_type_payment",
+    "transaction_type_transfer",
+    "transaction_type_withdrawal",
+    "merchant_category_entertainment",
+    "merchant_category_grocery",
+    "merchant_category_online",
+    "merchant_category_other",
+    "merchant_category_restaurant",
+    "merchant_category_retail",
+    "merchant_category_travel",
+    "merchant_category_utilities",
+    "location_Berlin",
+    "location_Dubai",
+    "location_London",
+    "location_New York",
+    "location_Singapore",
+    "location_Sydney",
+    "location_Tokyo",
+    "location_Toronto",
+    "device_used_atm",
+    "device_used_mobile",
+    "device_used_pos",
+    "device_used_web",
+    "payment_channel_ACH",
+    "payment_channel_UPI",
+    "payment_channel_card",
+    "payment_channel_wire_transfer"
+  ],
+  "category_fields": [
+    "transaction_type",
+    "merchant_category",
+    "location",
+    "device_used",
+    "payment_channel"
+  ],
+  "numeric_fields": [
+    "amount",
+    "time_since_last_transaction",
+    "spending_deviation_score",
+    "velocity_score",
+    "geo_anomaly_score",
+    "hour",
+    "day_of_week",
+    "month"
+  ],
+  "category_options": {
+    "transaction_type": [
+      "deposit",
+      "payment",
+      "transfer",
+      "withdrawal"
+    ],
+    "merchant_category": [
+      "entertainment",
+      "grocery",
+      "online",
+      "other",
+      "restaurant",
+      "retail",
+      "travel",
+      "utilities"
+    ],
+    "location": [
+      "Berlin",
+      "Dubai",
+      "London",
+      "New York",
+      "Singapore",
+      "Sydney",
+      "Tokyo",
+      "Toronto"
+    ],
+    "device_used": [
+      "atm",
+      "mobile",
+      "pos",
+      "web"
+    ],
+    "payment_channel": [
+      "ACH",
+      "UPI",
+      "card",
+      "wire_transfer"
+    ]
+  },
+  "numeric_defaults": {
+    "amount": 136.645,
+    "time_since_last_transaction": 0.0,
+    "spending_deviation_score": 0.0,
+    "velocity_score": 10.0,
+    "geo_anomaly_score": 0.5
+  },
+  "time_defaults": {
+    "hour": 12,
+    "day_of_week": 2,
+    "month": 6
+  },
+  "risk_thresholds": {
+    "high": 0.75,
+    "medium": 0.45,
+    "low": 0.0
+  },
+  "input_style": "main"
+}
