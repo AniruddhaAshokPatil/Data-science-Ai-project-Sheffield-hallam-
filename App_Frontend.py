@@ -19,9 +19,9 @@ from scipy.sparse import hstack, csr_matrix
 
 warnings.filterwarnings("ignore")
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # PAGE CONFIG
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.set_page_config(
     page_title="MULTIMODAL FRAUD DETECTION SYSTEM AI",
     page_icon="🛡",
@@ -29,9 +29,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # GLOBAL CSS
-# ══════════════════════════════════════════════════════════════════════════════
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -183,9 +183,9 @@ html, body, [class*="css"] {
 """, unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # MODEL LOADERS
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 @st.cache_resource
 def load_nlp_models():
@@ -253,9 +253,9 @@ def load_spacy():
     return spacy.load("en_core_web_sm")
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # NLP HELPERS
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 KEEP_POS    = {"NOUN","VERB","ADJ","ADV","PROPN"}
 EMAIL_NOISE = {"enron","ect","hou","forwarded","original","attached","fw","re",
@@ -348,9 +348,9 @@ def render_shap(shap_result):
     plt.tight_layout(); return fig
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # CV HELPERS — RECEIPT
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 def predict_receipt(image, model_choice, cv_models):
     img_size  = tuple(cv_models['config']['img_size'])
@@ -367,9 +367,9 @@ def predict_receipt(image, model_choice, cv_models):
             "label": "FRAUDULENT" if pred==1 else "LEGITIMATE"}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # CV HELPERS — ID CARD
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 def predict_id_card(image, id_models):
     from tensorflow.keras.models import Model as KModel
@@ -402,9 +402,9 @@ def predict_id_card(image, id_models):
             "doc_type": doc_type, "confidence": round(confidence,4), "thresholds": thr}
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # UI HELPERS
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 def verdict_panel(label, sub, css, score_pct, meta):
     st.markdown(f"""
@@ -445,18 +445,18 @@ def empty_state(icon, title, sub):
     </div>""", unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # LOAD MODELS
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 nlp_models     = load_nlp_models()
 receipt_models = load_receipt_models()
 id_models      = load_id_models()
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # SIDEBAR
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 with st.sidebar:
     st.markdown('<div class="sidebar-logo">MULTIMODAL FRAUD DETECTION SYSTEM</div>', unsafe_allow_html=True)
@@ -487,9 +487,9 @@ with st.sidebar:
     st.markdown('<div class="sidebar-item">MobileNetV2 (Transfer Learning)<br>ResNet50 (Transfer Learning)<br>COCO Annotated Dataset</div>', unsafe_allow_html=True)
 
   
-# ══════════════════════════════════════════════════════════════════════════════
+
 # TOP BAR + STATS
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 st.markdown("""
 <div class="topbar">
@@ -508,9 +508,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 # TABS
-# ══════════════════════════════════════════════════════════════════════════════
+
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "  Email Fraud  ",
@@ -520,9 +520,9 @@ tab1, tab2, tab3, tab4 = st.tabs([
 ])
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # TAB 1 — PHISHING EMAIL
-# ─────────────────────────────────────────────────────────────────────────────
+
 with tab1:
     section_label("Email Fruad Analysis")
     left, right = st.columns([1.1, 0.9], gap="large")
@@ -595,9 +595,9 @@ with tab1:
                 alert_warn(f"SHAP error: {e}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # TAB 2 — RECEIPT FRAUD
-# ─────────────────────────────────────────────────────────────────────────────
+
 with tab2:
     section_label("Receipt Fraud Detection")
     left2, right2 = st.columns([1, 1.1], gap="large")
@@ -652,9 +652,9 @@ with tab2:
             empty_state("🧾", "AWAITING IMAGE", "Upload a receipt and click Run Analysis")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # TAB 3 — ID CARD FRAUD
-# ─────────────────────────────────────────────────────────────────────────────
+
 with tab3:
     section_label("Identity Card Fraud Detection")
     alert_info(
@@ -761,9 +761,9 @@ with tab3:
             empty_state("🪪", "AWAITING IMAGE", "Upload an ID card image and click Run Analysis")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+
 # TAB 4 — DATASET INFO
-# ─────────────────────────────────────────────────────────────────────────────
+
 with tab4:
     section_label("Dataset & System Information")
     col_d1, col_d2, col_d3 = st.columns(3, gap="large")
