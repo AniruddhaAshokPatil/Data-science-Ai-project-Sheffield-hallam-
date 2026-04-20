@@ -4,6 +4,19 @@ An AI-powered fraud detection system built with Streamlit that combines NLP and 
 
 > **Academic Research Project — MSc AI & Data Science 2024, Sheffield Hallam University**
 
+
+
+#  Dataset Links
+
+The receipt and the email is available in the dataset folder.
+
+https://www.kaggle.com/datasets/naserabdullahalam/phishing-email-dataset
+
+https://www.kaggle.com/datasets/sebastiandixon/yolov8-fraud-detection
+
+https://www.kaggle.com/datasets/kontheeboonmeeprakob/midv500
+
+
 ---
 
 ##  Screenshots
