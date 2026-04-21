@@ -21,6 +21,7 @@ class AuthenticatedUser:
     username: str
     role: str
     full_name: str
+    email: str
 
 
 def hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
@@ -40,12 +41,13 @@ def verify_password(password: str, *, salt: str, password_hash: str) -> bool:
     return hmac.compare_digest(computed_hash, password_hash)
 
 
-def create_access_token(*, username: str, role: str, full_name: str) -> str:
+def create_access_token(*, username: str, role: str, full_name: str, email: str) -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(hours=TOKEN_TTL_HOURS)
     payload = {
         "username": username,
         "role": role,
         "full_name": full_name,
+        "email": email,
         "exp": expires_at.isoformat(),
     }
     encoded_payload = base64.urlsafe_b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
@@ -76,6 +78,7 @@ def decode_access_token(token: str) -> AuthenticatedUser:
         username=payload["username"],
         role=payload["role"],
         full_name=payload["full_name"],
+        email=payload["email"],
     )
 
 
@@ -96,6 +99,12 @@ def get_current_user(authorization: str | None = Header(default=None)) -> Authen
 def require_user_role(current_user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
     if current_user.role not in {"user", "investigator"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="I could not authorize this user role.")
+    return current_user
+
+
+def require_customer_role(current_user: AuthenticatedUser = Depends(get_current_user)) -> AuthenticatedUser:
+    if current_user.role != "user":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="I need a policyholder account for claim submission.")
     return current_user
 
 

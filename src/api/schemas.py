@@ -116,3 +116,4 @@ class LoginResponse(BaseModel):
     role: str
     username: str
     full_name: str
+    email: str

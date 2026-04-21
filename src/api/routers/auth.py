@@ -26,6 +26,7 @@ def login(login_request: LoginRequest) -> LoginResponse:
         username=user_row["username"],
         role=user_row["role"],
         full_name=user_row["full_name"],
+        email=user_row["email"],
     )
     return LoginResponse(
         access_token=access_token,
@@ -33,4 +34,5 @@ def login(login_request: LoginRequest) -> LoginResponse:
         role=user_row["role"],
         username=user_row["username"],
         full_name=user_row["full_name"],
+        email=user_row["email"],
     )

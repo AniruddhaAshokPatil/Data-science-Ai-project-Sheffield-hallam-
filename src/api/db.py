@@ -79,6 +79,7 @@ USERS_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS app_users (
     username TEXT PRIMARY KEY,
     full_name TEXT NOT NULL,
+    email TEXT NOT NULL DEFAULT '',
     role TEXT NOT NULL,
     password_salt TEXT NOT NULL,
     password_hash TEXT NOT NULL,
@@ -99,6 +100,7 @@ def init_database() -> None:
         connection.execute(CLAIMS_TABLE_SQL)
         connection.execute(EVIDENCE_TABLE_SQL)
         connection.execute(USERS_TABLE_SQL)
+        _ensure_app_user_columns(connection)
         connection.commit()
 
 
@@ -161,16 +163,44 @@ def upsert_user(*, username: str, full_name: str, role: str, password_salt: str,
     with closing(get_connection()) as connection:
         connection.execute(
             """
-            INSERT INTO app_users (username, full_name, role, password_salt, password_hash, is_active)
-            VALUES (?, ?, ?, ?, ?, 1)
+            INSERT INTO app_users (username, full_name, email, role, password_salt, password_hash, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
             ON CONFLICT(username) DO UPDATE SET
                 full_name = excluded.full_name,
+                email = excluded.email,
                 role = excluded.role,
                 password_salt = excluded.password_salt,
                 password_hash = excluded.password_hash,
                 is_active = 1
             """,
-            (username, full_name, role, password_salt, password_hash),
+            (username, full_name, f"{username}@shieldwise.local", role, password_salt, password_hash),
+        )
+        connection.commit()
+
+
+def upsert_user_with_email(
+    *,
+    username: str,
+    full_name: str,
+    email: str,
+    role: str,
+    password_salt: str,
+    password_hash: str,
+) -> None:
+    with closing(get_connection()) as connection:
+        connection.execute(
+            """
+            INSERT INTO app_users (username, full_name, email, role, password_salt, password_hash, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+            ON CONFLICT(username) DO UPDATE SET
+                full_name = excluded.full_name,
+                email = excluded.email,
+                role = excluded.role,
+                password_salt = excluded.password_salt,
+                password_hash = excluded.password_hash,
+                is_active = 1
+            """,
+            (username, full_name, email, role, password_salt, password_hash),
         )
         connection.commit()
 
@@ -181,7 +211,7 @@ def fetch_user(username: str) -> sqlite3.Row | None:
             return None
         row = connection.execute(
             """
-            SELECT username, full_name, role, password_salt, password_hash, is_active
+            SELECT username, full_name, email, role, password_salt, password_hash, is_active
             FROM app_users
             WHERE username = ?
             LIMIT 1
@@ -202,3 +232,12 @@ def _table_exists(connection: sqlite3.Connection, table_name: str) -> bool:
         (table_name,),
     ).fetchone()
     return row is not None
+
+
+def _ensure_app_user_columns(connection: sqlite3.Connection) -> None:
+    columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(app_users)").fetchall()
+    }
+    if "email" not in columns:
+        connection.execute("ALTER TABLE app_users ADD COLUMN email TEXT NOT NULL DEFAULT ''")

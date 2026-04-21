@@ -1,198 +1,137 @@
-#  Multimodal Fraud Detection System AI
+# ShieldWise
 
-I built this project as a Streamlit-based fraud detection app that brings together NLP and computer vision so I can look at phishing emails, suspicious receipts, and fake identity documents in one place.
+ShieldWise is a submission-ready insurance claim fraud detection project. It combines:
 
-I use the local `data/` folder in this repo as the main working data area for the project, so the raw and processed files live under paths like `data/raw/` and `data/processed/`.
+- a FastAPI backend for claim intake, dashboards, evidence analysis, and live alerts
+- a React frontend for the public homepage, policyholder dashboard, and investigator dashboard
+- a legacy Streamlit multimodal demo that still showcases the saved NLP and computer-vision models in `backend/`
 
-> **Academic Research Project — MSc AI & Data Science 2024, Sheffield Hallam University**
+The current tracked product direction is the insurance workflow in `src/api/` and `src/frontend/`. The Streamlit app in `App_Frontend.py` is retained as a model workbench, not the primary product surface.
 
+## What The Project Does
 
+- Accepts insurance claims with structured form data and optional receipt evidence
+- Scores claim language, uploaded documents, and behavioural risk signals
+- Shows a customer-facing dashboard for submitted claims
+- Shows an investigator dashboard with a queue and live alert feed
+- Persists submitted claims in a local SQLite runtime database
 
-#  Dataset Links
+## Main Stack
 
-The receipt and the email is available in the dataset folder.
+- Backend: FastAPI
+- Frontend: React + Vite
+- Realtime alerts: WebSocket
+- Data layer: pandas + SQLite
+- Optional demo app: Streamlit
 
-https://www.kaggle.com/datasets/naserabdullahalam/phishing-email-dataset
+## Repository Structure
 
-https://www.kaggle.com/datasets/sebastiandixon/yolov8-fraud-detection
-
-https://www.kaggle.com/datasets/kontheeboonmeeprakob/midv500
-
-
----
-
-##  Screenshots
-
-### Phishing Email Analysis
-![Phishing Email Detection](image1.jpeg)
-
-### Receipt Fraud Detection
-![Receipt Fraud Detection](image2.jpeg)
-
-### ID Card Fraud Detection
-![ID Card Fraud Detection](image3.jpg)
-
----
-
-## Detection Modules
-
-| Module | Models | Dataset |
-|--------|--------|---------|
-| **Phishing Email (NLP)** | Multinomial Naive Bayes, Random Forest | Enron + Ling-Spam |
-| **Receipt Fraud (CV)** | MobileNetV2, ResNet50 | SROIE via Roboflow (1,265 images) |
-| **ID Card Fraud (CV)** | MobileNetV2 + ResNet50 + One-Class SVM | MIDV-2019 |
-
----
-
-##  Project Structure
-
-```
-project/
-│
-├── App_Frontend.py                          # Main Streamlit application
-├── requirements.txt                         # Python packages I need to run the app
-├── scripts/validate_project.py              # Quick project health check
-├── docs/                                    # Project notes and traceability
-│
-├── data/                                   # Main project data folder
-│   ├── raw/
-│   └── processed/
-│
-├── backend/saved_models/                   # NLP & ID card models
-│   ├── mnb_model.pkl
-│   ├── rf_model.pkl
-│   ├── tfidf_vectorizer.pkl
-│   ├── chi2_selector.pkl
-│   ├── ocsvm.pkl
-│   ├── feature_scaler.pkl
-│   ├── label_encoder.pkl
-│   ├── model_config.json
-│   ├── phishing_keywords.json
-│   ├── stat_feature_cols.json
-│   ├── mobilenet_final.h5
-│   └── resnet_final.h5
-│
-└── backend/receipts_models/                # Receipt CV models
-    ├── mobilenet_receipt_fraud.keras
-    ├── resnet50_receipt_fraud.keras
-    ├── cv_config.json
-    └── cv_metrics.json
+```text
+.
+├── App_Frontend.py                 # Legacy multimodal Streamlit demo
+├── backend/                        # Saved NLP, receipt CV, and ID-card model artifacts
+├── data/
+│   ├── raw/insurance_claims/       # Main insurance datasets used by the API
+│   ├── raw/nlp/                    # Supporting NLP datasets
+│   ├── raw/transactions/           # Supporting transaction datasets
+│   └── processed/                  # Local processed outputs and runtime DB
+├── docs/
+│   ├── ISSUE_ALIGNMENT.md
+│   ├── INSURANCE_CLAIM_SAMPLES.md
+│   └── PROJECT_TRACEABILITY.md
+├── scripts/
+│   ├── rebuild_missing_models.py
+│   ├── train_claim_email_nlp_model.py
+│   ├── train_transaction_fraud_model.py
+│   └── validate_project.py
+├── src/
+│   ├── api/                        # FastAPI application
+│   └── frontend/                   # React/Vite frontend
+└── tests/
+    └── test_api_insurance.py       # API regression tests
 ```
 
----
+## How To Run
 
-##  Requirements
-
-If I want the setup to go as smoothly as possible, these are the versions I would use:
-
-- Python 3.10
-- TensorFlow 2.19
-- Keras 3.x
-- NumPy < 2.0
-
----
-
-##  Project Status
-
-What I have in the tracked `main` branch right now is a **Streamlit-first multimodal prototype** with:
-
-- a Streamlit interface in `App_Frontend.py`
-- data-preparation scripts in `src/data/`
-- training notebooks and saved model artifacts in `backend/`
-
-Some of the older GitHub issues talk about a bigger FastAPI + React + WebSocket setup, but when I compare those issues with the files that are actually tracked here, that is not the full shape of the repository at the moment.
-
-If I want to explain how the repository and the GitHub issues line up, these are the two files I would point someone to:
-
-- `docs/PROJECT_TRACEABILITY.md`
-- `docs/ISSUE_ALIGNMENT.md`
-
----
-
-##  How to Run
-
-If I were walking someone through the project from scratch, these are the steps I would give them to get the app running locally:
-
-### 1. Clone or download the project
+### Option 1: Run The Full Local Stack
 
 ```bash
-git clone <your-repo-url>
-cd <project-folder>
-```
-
-### 2. Create a virtual environment (recommended)
-
-```bash
-conda create -n fraud_app python=3.10
-conda activate fraud_app
-```
-
-### 3. Install dependencies
-
-```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 python -m spacy download en_core_web_sm
+
+cd src/frontend
+npm install
+cd ../..
+
+chmod +x run_all.sh
+./run_all.sh
 ```
 
-### 4. Ensure model files are in place
+This starts:
 
-Before I launch the app, I make sure the model files shown in the **Project Structure** section are actually there. I also keep the project datasets inside the local `data/` folder, because that is the main working data area this repo now uses. If something is missing, the app will show a red status dot in the sidebar, and any unavailable analysis actions will stay disabled instead of failing partway through.
+- React: `http://localhost:5173`
+- FastAPI: `http://localhost:8000`
+- API docs: `http://localhost:8000/docs`
+- Streamlit: `http://localhost:8501`
 
-### 5. Run the project check
+### Option 2: Run Only The Insurance Web App
+
+Backend:
 
 ```bash
-python scripts/validate_project.py
+source .venv/bin/activate
+uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-I added this script so I can quickly check that the main files, Python packages, and saved model files are all in place before I start the app.
-
-### 6. Run the app
+Frontend:
 
 ```bash
+cd src/frontend
+npm install
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+### Option 3: Run Only The Legacy Streamlit Demo
+
+```bash
+source .venv/bin/activate
 streamlit run App_Frontend.py
 ```
 
-Then I open my browser at `http://localhost:8501`
+## Demo Accounts
 
-If I rebuild or add model files while the app is already open, I can use the **Reload Model Status** button in the sidebar to refresh the model loaders.
+The API seeds local demo users on startup:
 
----
+- Policyholder: `demo_user` / `UserPass123!`
+- Investigator: `investigator_anna` / `InvestigatorPass123!`
 
-##  Module Details
+Policyholder claim submissions are now identity-bound to the signed-in customer account.
 
-###  Phishing Email Analysis (Tab 1)
-- I paste the email content into the text area
-- I pick either **Naive Bayes** or **Random Forest**
-- I can turn on **SHAP Explanation** if I want to see which words pushed the prediction
-- Behind the scenes, I am using this flow: pre-cleaning → spaCy lemmatisation → TF-IDF → Chi-squared selection → classification
+## Testing
 
-###  Receipt Fraud Detection (Tab 2)
-- I upload a receipt image (`JPG`, `JPEG`, `PNG`, or `BMP`)
-- I choose between **MobileNetV2** and **ResNet50**
-- The model then gives me a fraud probability and a simple verdict: legitimate or fraudulent
+Run the insurance API tests with:
 
-###  ID Card Fraud Detection (Tab 3)
-- I upload an ID card image (`JPG`, `JPEG`, `PNG`, `TIF`, `TIFF`, or `BMP`)
-- The app pulls features from both CNN models and then runs One-Class SVM anomaly detection on top
-- The final result comes back as one of three labels: **Genuine**, **Suspicious**, or **Fake**
+```bash
+python3 -m pytest tests/test_api_insurance.py
+```
 
-###  Dataset Info (Tab 4)
-- I use this tab to give a quick overview of the three datasets, the pipeline steps, and the ethical side of the project
+Run the project health check with:
 
----
+```bash
+python3 scripts/validate_project.py
+```
 
-##  Known Dependency Notes
+## Submission Notes
 
-- **NumPy**: keep it below `2.0`, because pandas and a few other packages can clash with NumPy 2.x
-- **Keras**: use **Keras 3.x**, because the `.keras` models were saved that way in Colab and may fail on Keras 2.x
-- **Streamlit**: use a fairly recent version, because older versions do not support `use_container_width` in `st.image()`
+- The primary submission surface is the ShieldWise insurance platform in `src/api/` and `src/frontend/`.
+- The Streamlit app is preserved because it still demonstrates the saved multimodal models included in the repository.
+- Legacy duplicate planning material and stale draft folders were removed so the repository reflects the current deliverable more clearly.
 
----
+## Supporting Files
 
-##  Ethical Considerations
-
-- I recognise that the models can still flag genuine users by mistake, so I should never treat the results as perfect
-- I also recognise that the training data may not fully represent every group, document type, or real-world fraud pattern
-- If I get a high-risk result, I should expect a real person to review it before any important decision is made
-- I am not treating this app as a tool for storing submitted content as part of normal use
-- If I ever moved this beyond a student project, I would need to make sure it followed GDPR and any other relevant legal or compliance rules
+- [docs/PROJECT_TRACEABILITY.md](docs/PROJECT_TRACEABILITY.md)
+- [docs/ISSUE_ALIGNMENT.md](docs/ISSUE_ALIGNMENT.md)
+- [docs/INSURANCE_CLAIM_SAMPLES.md](docs/INSURANCE_CLAIM_SAMPLES.md)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
-from src.api.auth import AuthenticatedUser, require_investigator_role, require_user_role
+from src.api.auth import AuthenticatedUser, require_customer_role, require_investigator_role, require_user_role
 from src.api.schemas import (
     ClaimSubmissionRequest,
     ClaimSubmissionResponse,
@@ -42,9 +42,15 @@ def company_dashboard(_: AuthenticatedUser = Depends(require_investigator_role))
 @router.post("/claims", response_model=ClaimSubmissionResponse, status_code=201)
 async def submit_claim(
     claim_request: ClaimSubmissionRequest,
-    _: AuthenticatedUser = Depends(require_user_role),
+    current_user: AuthenticatedUser = Depends(require_customer_role),
 ) -> ClaimSubmissionResponse:
     # I persist the new insurance claim here so it can show up across the user and company dashboards.
+    claim_request = claim_request.model_copy(
+        update={
+            "claimant_name": current_user.full_name,
+            "claimant_email": current_user.email,
+        }
+    )
     response = create_submitted_claim(claim_request)
     await alert_stream_manager.broadcast_alert(response.alert)
     return response
@@ -78,12 +84,12 @@ async def submit_claim_with_evidence(
     image_tamper_flag: bool = Form(False),
     claim_story: str = Form(...),
     evidence_file: UploadFile | None = File(None),
-    _: AuthenticatedUser = Depends(require_user_role),
+    current_user: AuthenticatedUser = Depends(require_customer_role),
 ) -> ClaimSubmissionResponse:
     # I parse the multipart form here so the frontend can submit claim details and evidence together.
     claim_request = ClaimSubmissionRequest(
-        claimant_name=claimant_name,
-        claimant_email=claimant_email,
+        claimant_name=current_user.full_name,
+        claimant_email=current_user.email,
         policy_type=policy_type,
         coverage_tier=coverage_tier,
         item_category=item_category,

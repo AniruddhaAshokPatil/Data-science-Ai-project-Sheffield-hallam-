@@ -17,6 +17,7 @@ function App() {
     role: "",
     username: "",
     fullName: "",
+    email: "",
     status: "logged_out",
     message: ""
   });
@@ -68,6 +69,7 @@ function App() {
         role: payload.role,
         username: payload.username,
         fullName: payload.full_name,
+        email: payload.email,
         status: "authenticated",
         message: `I signed in as ${payload.full_name}.`
       });
@@ -87,6 +89,7 @@ function App() {
       role: "",
       username: "",
       fullName: "",
+      email: "",
       status: "logged_out",
       message: "I signed out of the current session."
     });
@@ -431,8 +434,8 @@ function HomePage({
 
 function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, selectedEvidenceFile, submissionState, currentUser }) {
   const [formValues, setFormValues] = useState({
-    claimant_name: "Daniel Morgan",
-    claimant_email: "daniel@example.com",
+    claimant_name: currentUser.fullName || "",
+    claimant_email: currentUser.email || "",
     policy_type: "gadget",
     coverage_tier: "premium",
     item_category: "laptop",
@@ -466,6 +469,14 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
     }));
   }
 
+  useEffect(() => {
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      claimant_name: currentUser.fullName || "",
+      claimant_email: currentUser.email || ""
+    }));
+  }, [currentUser.email, currentUser.fullName]);
+
   async function handleSubmit(event) {
     event.preventDefault();
     await onSubmitClaim({
@@ -495,11 +506,11 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
             <div className="form-grid">
               <label>
                 Claimant Name
-                <input value={formValues.claimant_name} onChange={(event) => updateField("claimant_name", event.target.value)} />
+                <input value={formValues.claimant_name} readOnly />
               </label>
               <label>
                 Email
-                <input value={formValues.claimant_email} onChange={(event) => updateField("claimant_email", event.target.value)} />
+                <input value={formValues.claimant_email} readOnly />
               </label>
               <label>
                 Policy Type
@@ -621,7 +632,10 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
             {selectedEvidenceFile ? (
               <p className="evidence-note">I will upload evidence file: {selectedEvidenceFile.name}</p>
             ) : (
-              <p className="evidence-note">I can attach a receipt image or PDF evidence file before submission.</p>
+              <>
+                <p className="evidence-note">I can attach a receipt image or PDF evidence file before submission.</p>
+                <p className="evidence-note">I bind the claimant identity to the signed-in policyholder account for claim submission.</p>
+              </>
             )}
             {submissionState.message ? (
               <p className={`form-status ${submissionState.status}`}>{submissionState.message}</p>

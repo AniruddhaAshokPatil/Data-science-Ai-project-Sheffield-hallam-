@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from src.api.auth import hash_password
 from src.api.config import settings
-from src.api.db import init_database, upsert_user
+from src.api.db import init_database, upsert_user_with_email
 from src.api.services.insurance_data import _score_email_risk
 from src.api.services.insurance_data import load_claim_history
 from src.api.main import app
@@ -30,17 +30,19 @@ def isolate_persistent_test_paths(tmp_path, monkeypatch):
     load_claim_history.cache_clear()
     init_database()
     user_salt, user_hash = hash_password("UserPass123!")
-    upsert_user(
+    upsert_user_with_email(
         username="demo_user",
         full_name="Demo Policyholder",
+        email="policyholder@example.com",
         role="user",
         password_salt=user_salt,
         password_hash=user_hash,
     )
     investigator_salt, investigator_hash = hash_password("InvestigatorPass123!")
-    upsert_user(
+    upsert_user_with_email(
         username="investigator_anna",
         full_name="Anna Hughes",
+        email="anna.hughes@example.com",
         role="investigator",
         password_salt=investigator_salt,
         password_hash=investigator_hash,
@@ -71,6 +73,7 @@ def test_login_returns_role_aware_token():
 
     assert payload["token_type"] == "bearer"
     assert payload["role"] == "user"
+    assert payload["email"] == "policyholder@example.com"
 
 
 def test_company_dashboard_requires_investigator_role():
@@ -173,6 +176,36 @@ def test_claim_submission_persists_and_returns_dashboard_items():
     assert payload["customer_claim"]["claim_id"] == payload["claim_id"]
     assert payload["queue_item"]["claim_id"] == payload["claim_id"]
     assert payload["alert"]["severity"] in {"High", "Review", "Low"}
+    assert payload["queue_item"]["claimant"] == "Demo Policyholder"
+
+    latest_claim = load_claim_history().iloc[0]
+    assert latest_claim["claimant_name"] == "Demo Policyholder"
+    assert latest_claim["claimant_email"] == "policyholder@example.com"
+
+
+def test_investigator_cannot_submit_claim():
+    investigator_login = login_as("investigator_anna", "InvestigatorPass123!")
+
+    response = client.post(
+        "/api/insurance/claims",
+        headers={"Authorization": f"Bearer {investigator_login['access_token']}"},
+        json={
+            "claimant_name": "Anna Hughes",
+            "claimant_email": "anna.hughes@example.com",
+            "policy_type": "gadget",
+            "coverage_tier": "premium",
+            "item_category": "laptop",
+            "incident_type": "theft",
+            "claim_amount_gbp": 1200,
+            "estimated_item_value_gbp": 999,
+            "prior_claims_count": 0,
+            "claims_last_12_months": 0,
+            "days_since_policy_start": 120,
+            "claim_story": "I am trying to submit a claim from an investigator account even though that should be blocked.",
+        },
+    )
+
+    assert response.status_code == 403
 
 
 def test_claim_submission_with_evidence_uploads_file_and_scores_document_risk():
@@ -221,6 +254,7 @@ def test_claim_submission_with_evidence_uploads_file_and_scores_document_risk():
     assert payload["evidence_summary"]["evidence_storage_path"]
     assert payload["evidence_summary"]["document_risk_score"] > 0
     assert any("Possible edited image" in reason for reason in payload["evidence_summary"]["document_reasons"])
+    assert payload["queue_item"]["claimant"] == "Demo Policyholder"
 
 
 def test_email_risk_scoring_creates_clearer_gap_between_genuine_and_suspicious_claims():
