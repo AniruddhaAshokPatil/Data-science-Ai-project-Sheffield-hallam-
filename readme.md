@@ -33,7 +33,6 @@ The current tracked product direction is the insurance workflow in `src/api/` an
 ├── data/
 │   ├── raw/insurance_claims/       # Main insurance datasets used by the API
 │   ├── raw/nlp/                    # Supporting NLP datasets
-│   ├── raw/transactions/           # Supporting transaction datasets
 │   └── processed/                  # Local processed outputs and runtime DB
 ├── docs/
 │   ├── ISSUE_ALIGNMENT.md
@@ -42,7 +41,6 @@ The current tracked product direction is the insurance workflow in `src/api/` an
 ├── scripts/
 │   ├── rebuild_missing_models.py
 │   ├── train_claim_email_nlp_model.py
-│   ├── train_transaction_fraud_model.py
 │   └── validate_project.py
 ├── src/
 │   ├── api/                        # FastAPI application
@@ -128,7 +126,7 @@ python3 scripts/validate_project.py
 
 - The primary submission surface is the ShieldWise insurance platform in `src/api/` and `src/frontend/`.
 - The Streamlit app is preserved because it still demonstrates the saved multimodal models included in the repository.
-- Legacy duplicate planning material and stale draft folders were removed so the repository reflects the current deliverable more clearly.
+- Legacy duplicate planning material, stale draft folders, and transaction-only training datasets were removed so the repository reflects the current deliverable more clearly.
 
 ## Supporting Files
 

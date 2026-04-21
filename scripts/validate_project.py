@@ -126,8 +126,6 @@ def check_local_data_files():
         os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_email_ham_spam.csv"),
         os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed.csv"),
         os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed_dictionary.md"),
-        os.path.join(DATA_DIR, "raw", "transactions", "financial_fraud_detection_dataset.csv"),
-        os.path.join(DATA_DIR, "raw", "transactions", "card_transdata.csv"),
     ]
     return all(check_file_exists(path) for path in data_files)
 

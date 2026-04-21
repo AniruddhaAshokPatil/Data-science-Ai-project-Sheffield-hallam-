@@ -31,7 +31,7 @@ The Streamlit app remains because it still uses the tracked saved model files in
 | `data/processed/shieldwise_runtime.db` | Local runtime state during demos | Generated locally |
 | `App_Frontend.py` | Legacy Streamlit demo for saved models | Retained secondary app |
 | `backend/receipts_models/` | Receipt CV model artifacts used by Streamlit | Active for demo |
-| `backend/saved_models/` | NLP, transaction, and ID-card artifacts used by Streamlit and scripts | Active for demo/training support |
+| `backend/saved_models/` | NLP and ID-card artifacts used by Streamlit | Active for demo support |
 
 ## Cleanup Decisions
 
@@ -40,6 +40,8 @@ The following legacy materials were removed because they were not part of the cu
 - `Initial Work/`
 - old `.docx` submission files in the repo root
 - `docs/FRONTEND_ISSUE_ALIGNMENT.md`
+- transaction-only datasets in `data/raw/transactions/`
+- transaction-only training script and saved model artifacts
 
 I removed them because they duplicated older planning or draft material without contributing to the current runnable submission.
 

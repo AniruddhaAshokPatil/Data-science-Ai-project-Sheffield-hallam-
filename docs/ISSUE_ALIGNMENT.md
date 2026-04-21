@@ -13,7 +13,7 @@ The repository now clearly supports these issue themes:
 - claim submission with evidence upload
 - live alert streaming
 - API regression testing
-- supporting model-training and demo artifacts
+- supporting insurance-focused model-training and demo artifacts
 
 ## Issues That Match The Current Repo Well
 
@@ -30,11 +30,11 @@ The repository now clearly supports these issue themes:
 
 ## Issues That No Longer Match The Primary Submission Story
 
-These issue groups describe older or broader experimentation that still leaves artifacts in the repo, but they are not the main product being submitted now:
+These issue groups describe older or broader experimentation that no longer represent the tracked submission:
 
 | Issue Area | Current position |
 | --- | --- |
-| Transaction-only fraud pipeline issues | Still represented in `scripts/` and `backend/saved_models/`, but not part of the main web product |
+| Transaction-only fraud pipeline issues | Retired from the tracked repository and no longer part of the main web product |
 | Streamlit-only direction | No longer the primary repo narrative; Streamlit is now a secondary demo surface |
 | Older planning/reporting issues | Many are not represented by current tracked source files after cleanup |
 
@@ -42,12 +42,29 @@ These issue groups describe older or broader experimentation that still leaves a
 
 If you want the GitHub issue tracker to match the cleaned repository, these are the edits I recommend making directly on GitHub:
 
-1. Update the description of `#20`, `#21`, and `#22` so they reference the tracked insurance API and WebSocket implementation rather than missing placeholder backend files.
-2. Mark `#23`, `#24`, and `#25` as complete with references to `src/frontend/src/App.jsx`.
-3. Clarify `#26` as backend workflow coverage rather than a full browser E2E suite, unless you plan to add Playwright or Cypress later.
-4. Reword or close any open issues that still describe the repo as lacking the React frontend or FastAPI backend, because that is no longer true.
-5. Keep the model-training and dataset issues as historical context if you want to show the research path, but avoid letting them define the current submission narrative.
+1. Update the description of `#20`, `#21`, and `#22` so they reference the tracked insurance API and WebSocket implementation rather than transaction placeholders.
+2. Close `#23`, `#24`, and `#25` as completed and attach evidence from `src/frontend/src/App.jsx`, `src/frontend/src/main.jsx`, and `src/api/main.py`.
+3. Clarify `#26` as partially complete: backend workflow coverage exists in `tests/test_api_insurance.py`, but a browser-level E2E suite is still missing unless you add Playwright or Cypress later.
+4. Reword `#27` so it reflects the notebooks that do exist in `backend/`, while keeping it open if you still want a more polished evaluation notebook for the report.
+5. Reword `#28` so it references insurance-domain ethics and responsible AI rather than payment-regulation language from the older transaction framing.
+6. Keep the older transaction issue history only as historical context, because the current tracked deliverable is the insurance workflow.
 
-## Environment Limitation
+## Recommended Live Issue States
 
-I updated this alignment file locally, but I did not directly edit the GitHub issue bodies from this environment because the GitHub CLI and direct issue-edit connector access were not available in this session.
+| Issue | Recommended state | Reason |
+| --- | --- | --- |
+| `#20` | Closed | FastAPI backend skeleton is present and in use |
+| `#21` | Closed | Insurance endpoints replaced the older standalone transaction endpoint plan |
+| `#22` | Closed | WebSocket alert stream is implemented at `src/api/main.py` |
+| `#23` | Close now | React frontend skeleton is implemented |
+| `#24` | Close now | Dashboard components are implemented |
+| `#25` | Close now | Frontend WebSocket integration is implemented |
+| `#26` | Keep open or relabel partial | Backend integration tests exist, but no browser E2E suite is tracked |
+| `#27` | Keep open | Existing notebooks exist, but report-facing evaluation work may still be incomplete |
+| `#28` | Keep open | Repo mentions ethics, but a stronger dedicated section may still be needed |
+| `#29` | Keep open | Final report is not tracked in this repository |
+| `#30` | Keep open | Slide deck and rehearsal evidence are not tracked in this repository |
+
+## GitHub Tracker Status
+
+This file is intended to stay aligned with the live GitHub tracker. If issue bodies or states drift again, update them so the tracker reflects the current insurance-focused repository rather than retired transaction-only work.
