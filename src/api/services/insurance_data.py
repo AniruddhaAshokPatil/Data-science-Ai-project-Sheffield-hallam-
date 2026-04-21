@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import json
+import pickle
 import re
 from threading import Lock
 
 import pandas as pd
+from scipy.sparse import csr_matrix, hstack
 
 from src.api.config import settings
 from src.api.db import fetch_submitted_claims_dataframe, insert_submitted_claim
@@ -63,6 +66,17 @@ SUBMITTED_CLAIMS_COLUMNS = [
     "document_risk_score",
     "overall_risk_label",
     "manual_review_outcome",
+]
+
+NLP_MODELS_DIR = settings.REPO_ROOT / "backend" / "saved_models"
+NLP_STAT_FEATURE_COLUMNS = [
+    "char_count",
+    "word_count",
+    "unique_word_ratio",
+    "url_count",
+    "email_count",
+    "has_unsubscribe",
+    "phishing_keyword_count",
 ]
 
 
@@ -219,6 +233,90 @@ def _build_claim_record(claim_request: ClaimSubmissionRequest, claim_id: str, ev
 
 
 def _score_email_risk(claim_story: str) -> float:
+    model_risk = _score_email_risk_with_model(claim_story)
+    if model_risk is not None:
+        return model_risk
+
+    return _score_email_risk_with_heuristics(claim_story)
+
+
+@lru_cache(maxsize=1)
+def _load_email_risk_assets() -> dict | None:
+    try:
+        with open(NLP_MODELS_DIR / "mnb_model.pkl", "rb") as file:
+            mnb_model = pickle.load(file)
+        with open(NLP_MODELS_DIR / "rf_model.pkl", "rb") as file:
+            rf_model = pickle.load(file)
+        with open(NLP_MODELS_DIR / "tfidf_vectorizer.pkl", "rb") as file:
+            vectorizer = pickle.load(file)
+        with open(NLP_MODELS_DIR / "chi2_selector.pkl", "rb") as file:
+            selector = pickle.load(file)
+        with open(NLP_MODELS_DIR / "phishing_keywords.json", "r", encoding="utf-8") as file:
+            keywords = json.load(file)
+        stat_columns_path = NLP_MODELS_DIR / "stat_feature_cols.json"
+        if stat_columns_path.exists():
+            with open(stat_columns_path, "r", encoding="utf-8") as file:
+                stat_columns = json.load(file)
+        else:
+            stat_columns = NLP_STAT_FEATURE_COLUMNS
+    except (FileNotFoundError, OSError, pickle.PickleError, json.JSONDecodeError):
+        return None
+
+    return {
+        "mnb_model": mnb_model,
+        "rf_model": rf_model,
+        "vectorizer": vectorizer,
+        "selector": selector,
+        "keywords": keywords,
+        "stat_columns": stat_columns,
+    }
+
+
+def _score_email_risk_with_model(claim_story: str) -> float | None:
+    assets = _load_email_risk_assets()
+    if assets is None:
+        return None
+
+    cleaned_story = _clean_email_text(claim_story)
+    stat_frame = pd.DataFrame([_extract_email_stat_features(cleaned_story, assets["keywords"])])
+    stat_frame = stat_frame.reindex(columns=assets["stat_columns"], fill_value=0)
+    tfidf_matrix = assets["vectorizer"].transform([cleaned_story])
+    combined_matrix = hstack([tfidf_matrix, csr_matrix(stat_frame.values)])
+    selected_matrix = assets["selector"].transform(combined_matrix)
+
+    mnb_probability = float(assets["mnb_model"].predict_proba(selected_matrix)[0, 1])
+    rf_probability = float(assets["rf_model"].predict_proba(selected_matrix)[0, 1])
+
+    # I lean toward Naive Bayes because it separates ham/spam language more cleanly on this text-only task.
+    blended_probability = (mnb_probability * 0.75) + (rf_probability * 0.25)
+    calibrated_risk = 0.5 + ((blended_probability - 0.5) * 1.2)
+    return round(min(max(calibrated_risk, 0.02), 0.98), 2)
+
+
+def _clean_email_text(text: str) -> str:
+    text = str(text).lower()
+    text = re.sub(r"http\S+|www\S+", "", text)
+    text = re.sub(r"\S+@\S+", "", text)
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _extract_email_stat_features(text: str, keywords: list[str]) -> dict:
+    split_text = text.split()
+    lowered_text = text.lower()
+    return {
+        "char_count": len(text),
+        "word_count": len(split_text),
+        "unique_word_ratio": len(set(split_text)) / (len(split_text) + 1),
+        "url_count": len(re.findall(r"http\S+|www\S+", text)),
+        "email_count": len(re.findall(r"\S+@\S+", text)),
+        "has_unsubscribe": int("unsubscribe" in lowered_text),
+        "phishing_keyword_count": sum(1 for keyword in keywords if keyword in lowered_text),
+    }
+
+
+def _score_email_risk_with_heuristics(claim_story: str) -> float:
     lowered_story = claim_story.lower()
     word_count = len(lowered_story.split())
     risk = 0.18

@@ -28,9 +28,9 @@ def insurance_home() -> HomeResponse:
 
 
 @router.get("/customer-dashboard", response_model=CustomerDashboardResponse)
-def customer_dashboard(_: AuthenticatedUser = Depends(require_user_role)) -> CustomerDashboardResponse:
+def customer_dashboard(current_user: AuthenticatedUser = Depends(require_user_role)) -> CustomerDashboardResponse:
     # I return a sample policyholder dashboard payload here for the user-facing claim view.
-    return build_customer_dashboard_payload()
+    return build_customer_dashboard_payload(claimant_email=current_user.email)
 
 
 @router.get("/company-dashboard", response_model=CompanyDashboardResponse)

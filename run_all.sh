@@ -49,16 +49,11 @@ echo "Starting React frontend on http://localhost:5173"
 (cd "${FRONTEND_DIR}" && npm run dev -- --host 0.0.0.0 --port 5173) &
 PIDS+=("$!")
 
-echo "Starting Streamlit on http://localhost:8501"
-(cd "${PROJECT_ROOT}" && streamlit run App_Frontend.py) &
-PIDS+=("$!")
-
 echo
 echo "Services are starting:"
 echo "  React:     http://localhost:5173"
 echo "  FastAPI:   http://localhost:8000"
 echo "  API docs:  http://localhost:8000/docs"
-echo "  Streamlit: http://localhost:8501"
 echo
 echo "Press Ctrl+C in this terminal to stop all services."
 

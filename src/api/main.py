@@ -43,6 +43,19 @@ app.include_router(auth_router)
 app.include_router(insurance_router)
 
 
+@app.get("/")
+def api_root() -> dict:
+    # I expose a small root payload here so the API has a human-readable landing endpoint in the browser.
+    return {
+        "name": app.title,
+        "version": app.version,
+        "status": "ok",
+        "docs_url": "/docs",
+        "health_live_url": "/health/live",
+        "health_ready_url": "/health/ready",
+    }
+
+
 @app.websocket("/ws/alerts")
 async def claim_alerts_stream(websocket: WebSocket) -> None:
     # I keep the live alert stream separate from the REST endpoints because the dashboard needs push updates.

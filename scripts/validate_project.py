@@ -1,4 +1,6 @@
 import importlib
+import importlib.metadata
+import importlib.util
 import json
 import os
 
@@ -30,12 +32,19 @@ def check_file_exists(file_path):
 def check_import(module_name, display_name=None):
     label = display_name or module_name
     try:
-        module = importlib.import_module(module_name)
-        version = getattr(module, "__version__", "unknown")
-        print(f"[OK] {label} imported successfully ({version})")
+        if importlib.util.find_spec(module_name) is None:
+            raise ModuleNotFoundError(module_name)
+
+        try:
+            version = importlib.metadata.version(module_name)
+        except importlib.metadata.PackageNotFoundError:
+            module = importlib.import_module(module_name)
+            version = getattr(module, "__version__", "unknown")
+
+        print(f"[OK] {label} is available ({version})")
         return True
     except Exception as error:
-        print(f"[ERROR] {label} could not be imported: {error}")
+        print(f"[ERROR] {label} is not available: {error}")
         return False
 
 
@@ -56,7 +65,6 @@ def check_core_files():
     files_to_check = [
         os.path.join(PROJECT_ROOT, "readme.md"),
         os.path.join(PROJECT_ROOT, "run_all.sh"),
-        os.path.join(PROJECT_ROOT, "App_Frontend.py"),
         os.path.join(PROJECT_ROOT, "docs", "PROJECT_TRACEABILITY.md"),
         os.path.join(PROJECT_ROOT, "docs", "ISSUE_ALIGNMENT.md"),
         os.path.join(PROJECT_ROOT, "docs", "INSURANCE_CLAIM_SAMPLES.md"),
@@ -78,7 +86,6 @@ def check_environment():
         ("multipart", "python-multipart"),
     ]
     optional_packages = [
-        ("streamlit", "Streamlit"),
         ("tensorflow", "TensorFlow"),
         ("keras", "Keras"),
         ("spacy", "spaCy"),
@@ -89,10 +96,10 @@ def check_environment():
         if not check_import(module_name, display_name):
             all_ok = False
 
-    print("\nOptional legacy demo packages:")
+    print("\nOptional model-development packages:")
     for module_name, display_name in optional_packages:
         if not check_import(module_name, display_name):
-            print(f"[WARN] {display_name} is only needed for the secondary Streamlit demo.")
+            print(f"[WARN] {display_name} is only needed for training or rebuilding supporting model artifacts.")
 
     return all_ok
 
@@ -123,7 +130,7 @@ def check_model_files():
 def check_local_data_files():
     print_title("4. Checking Local Data Files")
     data_files = [
-        os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_email_ham_spam.csv"),
+        os.path.join(DATA_DIR, "raw", "nlp", "claim_email_ham_spam.csv"),
         os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed.csv"),
         os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed_dictionary.md"),
     ]
@@ -136,6 +143,7 @@ def check_frontend_files():
         os.path.join(PROJECT_ROOT, "src", "frontend", "index.html"),
         os.path.join(PROJECT_ROOT, "src", "frontend", "vite.config.js"),
         os.path.join(PROJECT_ROOT, "src", "frontend", "src", "App.jsx"),
+        os.path.join(PROJECT_ROOT, "src", "frontend", "src", "data", "mockData.js"),
         os.path.join(PROJECT_ROOT, "src", "frontend", "src", "main.jsx"),
         os.path.join(PROJECT_ROOT, "src", "frontend", "src", "styles.css"),
     ]

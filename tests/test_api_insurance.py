@@ -99,6 +99,81 @@ def test_customer_dashboard_accepts_user_role():
     assert "claims" in response.json()
 
 
+def test_customer_dashboard_only_returns_claims_for_signed_in_policyholder():
+    primary_user = login_as("demo_user", "UserPass123!")
+
+    secondary_salt, secondary_hash = hash_password("SecondUserPass123!")
+    upsert_user_with_email(
+        username="second_user",
+        full_name="Casey Palmer",
+        email="casey@example.com",
+        role="user",
+        password_salt=secondary_salt,
+        password_hash=secondary_hash,
+    )
+    secondary_user = login_as("second_user", "SecondUserPass123!")
+
+    first_claim_response = client.post(
+        "/api/insurance/claims",
+        headers={"Authorization": f"Bearer {primary_user['access_token']}"},
+        json={
+            "claimant_name": "Ignored Name",
+            "claimant_email": "ignored@example.com",
+            "policy_type": "gadget",
+            "coverage_tier": "premium",
+            "item_category": "laptop",
+            "incident_type": "theft",
+            "claim_amount_gbp": 999,
+            "estimated_item_value_gbp": 899,
+            "prior_claims_count": 1,
+            "claims_last_12_months": 0,
+            "days_since_policy_start": 45,
+            "claim_story": "I am submitting my own laptop theft claim with supporting details for policyholder review.",
+        },
+    )
+    assert first_claim_response.status_code == 201
+
+    second_claim_response = client.post(
+        "/api/insurance/claims",
+        headers={"Authorization": f"Bearer {secondary_user['access_token']}"},
+        json={
+            "claimant_name": "Ignored Name",
+            "claimant_email": "ignored@example.com",
+            "policy_type": "contents",
+            "coverage_tier": "standard",
+            "item_category": "television",
+            "incident_type": "accidental_damage",
+            "claim_amount_gbp": 550,
+            "estimated_item_value_gbp": 500,
+            "prior_claims_count": 0,
+            "claims_last_12_months": 0,
+            "days_since_policy_start": 120,
+            "claim_story": "I am submitting a separate home contents claim and expect only my claim history to appear.",
+        },
+    )
+    assert second_claim_response.status_code == 201
+
+    primary_dashboard = client.get(
+        "/api/insurance/customer-dashboard",
+        headers={"Authorization": f"Bearer {primary_user['access_token']}"},
+    )
+    secondary_dashboard = client.get(
+        "/api/insurance/customer-dashboard",
+        headers={"Authorization": f"Bearer {secondary_user['access_token']}"},
+    )
+
+    assert primary_dashboard.status_code == 200
+    assert secondary_dashboard.status_code == 200
+
+    primary_claim_ids = {claim["claim_id"] for claim in primary_dashboard.json()["claims"]}
+    secondary_claim_ids = {claim["claim_id"] for claim in secondary_dashboard.json()["claims"]}
+
+    assert first_claim_response.json()["claim_id"] in primary_claim_ids
+    assert second_claim_response.json()["claim_id"] not in primary_claim_ids
+    assert second_claim_response.json()["claim_id"] in secondary_claim_ids
+    assert first_claim_response.json()["claim_id"] not in secondary_claim_ids
+
+
 def test_insurance_home_endpoint_returns_core_sections():
     response = client.get("/api/insurance/home")
 

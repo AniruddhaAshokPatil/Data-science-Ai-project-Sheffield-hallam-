@@ -4,9 +4,8 @@ ShieldWise is a submission-ready insurance claim fraud detection project. It com
 
 - a FastAPI backend for claim intake, dashboards, evidence analysis, and live alerts
 - a React frontend for the public homepage, policyholder dashboard, and investigator dashboard
-- a legacy Streamlit multimodal demo that still showcases the saved NLP and computer-vision models in `backend/`
 
-The current tracked product direction is the insurance workflow in `src/api/` and `src/frontend/`. The Streamlit app in `App_Frontend.py` is retained as a model workbench, not the primary product surface.
+The tracked product direction is the insurance workflow in `src/api/` and `src/frontend/`.
 
 ## What The Project Does
 
@@ -22,14 +21,12 @@ The current tracked product direction is the insurance workflow in `src/api/` an
 - Frontend: React + Vite
 - Realtime alerts: WebSocket
 - Data layer: pandas + SQLite
-- Optional demo app: Streamlit
 
 ## Repository Structure
 
 ```text
 .
-├── App_Frontend.py                 # Legacy multimodal Streamlit demo
-├── backend/                        # Saved NLP, receipt CV, and ID-card model artifacts
+├── backend/                        # Saved NLP and receipt-model artifacts that support the insurance workflow
 ├── data/
 │   ├── raw/insurance_claims/       # Main insurance datasets used by the API
 │   ├── raw/nlp/                    # Supporting NLP datasets
@@ -73,7 +70,6 @@ This starts:
 - React: `http://localhost:5173`
 - FastAPI: `http://localhost:8000`
 - API docs: `http://localhost:8000/docs`
-- Streamlit: `http://localhost:8501`
 
 ### Option 2: Run Only The Insurance Web App
 
@@ -90,13 +86,6 @@ Frontend:
 cd src/frontend
 npm install
 npm run dev -- --host 0.0.0.0 --port 5173
-```
-
-### Option 3: Run Only The Legacy Streamlit Demo
-
-```bash
-source .venv/bin/activate
-streamlit run App_Frontend.py
 ```
 
 ## Demo Accounts
@@ -125,7 +114,6 @@ python3 scripts/validate_project.py
 ## Submission Notes
 
 - The primary submission surface is the ShieldWise insurance platform in `src/api/` and `src/frontend/`.
-- The Streamlit app is preserved because it still demonstrates the saved multimodal models included in the repository.
 - Legacy duplicate planning material, stale draft folders, and transaction-only training datasets were removed so the repository reflects the current deliverable more clearly.
 
 ## Supporting Files

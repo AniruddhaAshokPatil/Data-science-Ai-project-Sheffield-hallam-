@@ -49,6 +49,22 @@ function App() {
 
   const selectedEmail = homeData.claim_email_samples[activeEmailSample] || claimEmailSamples[activeEmailSample];
 
+  async function loadHomeData() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/insurance/home`);
+      if (!response.ok) {
+        return;
+      }
+
+      const payload = await response.json();
+      setHomeData(payload);
+      setLiveAlerts(payload.live_alerts || liveAlertsSeed);
+    } catch (error) {
+      // I keep the homepage usable on local mock data when the API is offline.
+      console.warn("I could not load the public insurance homepage data.", error);
+    }
+  }
+
   async function handleLogin(credentials) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -96,17 +112,12 @@ function App() {
     setActiveView("home");
   }
 
-  async function loadApiData() {
-    if (!authState.accessToken) {
-      return;
-    }
-
+  async function loadProtectedData() {
     try {
       const requestHeaders = {
         Authorization: `Bearer ${authState.accessToken}`
       };
       const requestList = [
-        fetch(`${API_BASE_URL}/api/insurance/home`),
         authState.role === "user" || authState.role === "investigator"
           ? fetch(`${API_BASE_URL}/api/insurance/customer-dashboard`, { headers: requestHeaders })
           : Promise.resolve(new Response(null, { status: 204 })),
@@ -115,26 +126,19 @@ function App() {
           : Promise.resolve(new Response(null, { status: 204 }))
       ];
 
-      const [homeResponse, customerResponse, companyResponse] = await Promise.all(requestList);
-
-      if (!homeResponse.ok) {
-        return;
-      }
-
-      const homePayload = await homeResponse.json();
+      const [customerResponse, companyResponse] = await Promise.all(requestList);
       const customerPayload = customerResponse.status === 204 ? { claims: customerClaims } : await customerResponse.json();
       const companyPayload =
         companyResponse.status === 204
           ? { metrics: companyData.metrics, queue: companyQueue, live_alerts: liveAlertsSeed }
           : await companyResponse.json();
 
-      setHomeData(homePayload);
       setCustomerData(customerPayload);
       setCompanyData(companyPayload);
-      setLiveAlerts(companyPayload.live_alerts || homePayload.live_alerts || liveAlertsSeed);
+      setLiveAlerts(companyPayload.live_alerts || liveAlertsSeed);
     } catch (error) {
       // I keep the frontend on mock data if the local API is not running yet.
-      console.warn("I could not load the insurance API, so I kept the local demo data.", error);
+      console.warn("I could not load the protected insurance dashboard data.", error);
     }
   }
 
@@ -171,7 +175,8 @@ function App() {
         queue: [payload.queue_item, ...(currentData.queue || [])]
       }));
       setLiveAlerts((currentAlerts) => [payload.alert, ...currentAlerts].slice(0, 7));
-      await loadApiData();
+      await loadHomeData();
+      await loadProtectedData();
       setSubmissionState({
         status: "success",
         message: `I created claim ${payload.claim_id}, stored the evidence file, and pushed it into the investigation workflow.`
@@ -187,13 +192,15 @@ function App() {
   }
 
   useEffect(() => {
-    async function loadInitialData() {
-      await loadApiData();
+    loadHomeData();
+  }, []);
+
+  useEffect(() => {
+    if (!authState.accessToken) {
+      return;
     }
 
-    if (authState.accessToken) {
-      loadInitialData();
-    }
+    loadProtectedData();
   }, [authState.accessToken, authState.role]);
 
   useEffect(() => {

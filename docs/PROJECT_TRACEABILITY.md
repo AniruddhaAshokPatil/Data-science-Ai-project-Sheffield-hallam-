@@ -6,19 +6,15 @@ This note records what is actually tracked in the repository after cleanup. I us
 
 ## Current Project Shape
 
-The repository now has two clearly separated parts:
+The repository now centers on one tracked product: `ShieldWise`, the insurance claim fraud platform.
 
-1. `ShieldWise`, the tracked insurance claim fraud platform
-2. the older `App_Frontend.py` Streamlit model demo
-
-The insurance platform is the primary deliverable and consists of:
+The active submission consists of:
 
 - FastAPI application code in `src/api/`
 - React frontend code in `src/frontend/`
 - regression tests in `tests/test_api_insurance.py`
 - insurance datasets in `data/raw/insurance_claims/`
-
-The Streamlit app remains because it still uses the tracked saved model files in `backend/`.
+- supporting model artifacts in `backend/`
 
 ## Active Runtime Paths
 
@@ -29,9 +25,8 @@ The Streamlit app remains because it still uses the tracked saved model files in
 | `tests/test_api_insurance.py` | API regression coverage | Active |
 | `data/raw/insurance_claims/` | Main input data for the insurance workflow | Active |
 | `data/processed/shieldwise_runtime.db` | Local runtime state during demos | Generated locally |
-| `App_Frontend.py` | Legacy Streamlit demo for saved models | Retained secondary app |
-| `backend/receipts_models/` | Receipt CV model artifacts used by Streamlit | Active for demo |
-| `backend/saved_models/` | NLP and ID-card artifacts used by Streamlit | Active for demo support |
+| `backend/receipts_models/` | Receipt CV model artifacts that support insurance evidence scoring research | Supporting assets |
+| `backend/saved_models/` | NLP and related saved model artifacts retained for supporting workflow research | Supporting assets |
 
 ## Cleanup Decisions
 
@@ -57,10 +52,6 @@ The repository supports these execution paths:
 ### All-in-one local demo
 
 - `./run_all.sh`
-
-### Legacy Streamlit demo
-
-- `streamlit run App_Frontend.py`
 
 ## Key Behavioural Trace Points
 

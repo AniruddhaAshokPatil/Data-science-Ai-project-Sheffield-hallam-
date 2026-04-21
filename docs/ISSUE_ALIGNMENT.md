@@ -35,7 +35,7 @@ These issue groups describe older or broader experimentation that no longer repr
 | Issue Area | Current position |
 | --- | --- |
 | Transaction-only fraud pipeline issues | Retired from the tracked repository and no longer part of the main web product |
-| Streamlit-only direction | No longer the primary repo narrative; Streamlit is now a secondary demo surface |
+| Streamlit-only direction | Retired from the tracked repository and no longer part of the submission story |
 | Older planning/reporting issues | Many are not represented by current tracked source files after cleanup |
 
 ## Manual GitHub Issue Edits Recommended

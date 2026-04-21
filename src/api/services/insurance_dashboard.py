@@ -37,8 +37,10 @@ def build_home_payload() -> HomeResponse:
     )
 
 
-def build_customer_dashboard_payload() -> CustomerDashboardResponse:
-    dataframe = load_claim_history().head(6)
+def build_customer_dashboard_payload(*, claimant_email: str) -> CustomerDashboardResponse:
+    dataframe = load_claim_history()
+    claimant_mask = dataframe["claimant_email"].astype(str).str.casefold() == claimant_email.casefold()
+    claimant_dataframe = dataframe.loc[claimant_mask].head(6)
     claims = [
         CustomerClaim(
             claim_id=row.claim_id,
@@ -50,7 +52,7 @@ def build_customer_dashboard_payload() -> CustomerDashboardResponse:
             risk_summary=row.overall_risk_label.title(),
             next_step=_build_next_step(row.manual_review_outcome, row.overall_risk_label),
         )
-        for row in dataframe.itertuples()
+        for row in claimant_dataframe.itertuples()
     ]
     return CustomerDashboardResponse(claims=claims)
 

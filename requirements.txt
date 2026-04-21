@@ -1,4 +1,3 @@
-streamlit>=1.49
 fastapi>=0.115,<1.0
 uvicorn>=0.30,<1.0
 python-multipart>=0.0.9,<1.0
