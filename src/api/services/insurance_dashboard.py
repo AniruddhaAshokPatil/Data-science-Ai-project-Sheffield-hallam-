@@ -68,7 +68,9 @@ def build_company_dashboard_payload() -> CompanyDashboardResponse:
     queue = [
         QueueItem(
             claim_id=row.claim_id,
-            claimant=f"Policyholder {row.claimant_id[-4:]}",
+            claimant=row.claimant_name
+            if isinstance(row.claimant_name, str) and row.claimant_name.strip()
+            else f"Policyholder {row.claimant_id[-4:]}",
             policy_type=f"{row.policy_type.title()} {row.coverage_tier.title()}",
             amount=f"GBP {row.claim_amount_gbp:,.0f}",
             nlp_risk=float(row.email_language_risk_score),
@@ -119,6 +121,7 @@ def create_submitted_claim(claim_request: ClaimSubmissionRequest, evidence_summa
             "evidence_storage_path": claim_record.get("evidence_storage_path", ""),
             "cv_signal_summary": claim_record.get("cv_signal_summary", ""),
             "document_risk_score": claim_record.get("document_risk_score", 0.0),
+            "document_reasons": _build_document_reasons(_record_accessor(claim_record)),
         },
     )
 
@@ -261,11 +264,11 @@ def _build_alert_title(row) -> str:
 def _build_alert_reason(row) -> str:
     reasons = []
     if int(row.receipt_mismatch_flag) == 1:
-        reasons.append("I found a mismatch between the claim story and the uploaded receipt.")
+        reasons.append("Amount mismatch was flagged between the claim details and the uploaded receipt.")
     if int(row.duplicate_receipt_flag) == 1:
-        reasons.append("I found a receipt pattern that looks reused.")
+        reasons.append("Duplicate receipt detected from an existing evidence match.")
     if int(getattr(row, "image_tamper_flag", 0)) == 1:
-        reasons.append("I found visual evidence signals that may indicate image tampering.")
+        reasons.append("Possible edited image detected from the uploaded receipt checks.")
     if int(row.bank_detail_change_last_30_days_flag) == 1:
         reasons.append("I detected a recent payout-detail change before submission.")
     if int(row.account_login_location_change_flag) == 1:
@@ -277,6 +280,24 @@ def _build_alert_reason(row) -> str:
         reasons.append("I found a consistent claim story, behaviour pattern, and document profile.")
 
     return " ".join(reasons[:2])
+
+
+def _build_document_reasons(row) -> list[str]:
+    reasons = []
+    if int(getattr(row, "receipt_present_flag", 0)) == 0:
+        reasons.append("No receipt or invoice was uploaded for this claim.")
+    if int(getattr(row, "receipt_mismatch_flag", 0)) == 1:
+        reasons.append("Amount mismatch was flagged between the claim details and the uploaded receipt.")
+    if int(getattr(row, "duplicate_receipt_flag", 0)) == 1:
+        reasons.append("Duplicate receipt detected because the file matches evidence already on record.")
+    if int(getattr(row, "image_tamper_flag", 0)) == 1:
+        reasons.append("Possible edited image detected from the uploaded receipt checks.")
+
+    cv_signal_summary = str(getattr(row, "cv_signal_summary", "")).strip()
+    if cv_signal_summary and cv_signal_summary != "I did not receive an evidence file for this claim.":
+        reasons.append(cv_signal_summary)
+
+    return reasons or ["Receipt file uploaded and passed the available document checks."]
 
 
 def _format_submitted_at(timestamp_value) -> str:

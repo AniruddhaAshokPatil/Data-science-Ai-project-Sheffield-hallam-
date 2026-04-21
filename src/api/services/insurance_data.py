@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import re
 from threading import Lock
 
 import pandas as pd
@@ -219,14 +220,80 @@ def _build_claim_record(claim_request: ClaimSubmissionRequest, claim_id: str, ev
 
 def _score_email_risk(claim_story: str) -> float:
     lowered_story = claim_story.lower()
-    risk = 0.12
-    risky_phrases = ["urgent", "as soon as possible", "full payout", "do not remember", "updated bank account"]
-    for phrase in risky_phrases:
+    word_count = len(lowered_story.split())
+    risk = 0.18
+
+    suspicious_phrase_weights = {
+        "urgent": 0.2,
+        "as soon as possible": 0.2,
+        "full payout": 0.22,
+        "do not remember": 0.2,
+        "don't remember": 0.2,
+        "cannot remember": 0.2,
+        "yesterday": 0.1,
+        "updated bank account": 0.22,
+        "new bank account": 0.22,
+        "send the payment": 0.16,
+        "very expensive": 0.12,
+        "need the money": 0.2,
+        "need this paid": 0.18,
+        "happened very fast": 0.12,
+        "not sure": 0.14,
+        "i think": 0.08,
+    }
+    for phrase, weight in suspicious_phrase_weights.items():
         if phrase in lowered_story:
-            risk += 0.12
-    if len(lowered_story.split()) < 25:
-        risk += 0.08
-    return round(min(risk, 0.95), 2)
+            risk += weight
+
+    trustworthy_phrase_weights = {
+        "attached the original purchase receipt": 0.16,
+        "repair assessment": 0.12,
+        "serial number": 0.1,
+        "police report": 0.14,
+        "crime reference": 0.14,
+        "technician": 0.08,
+        "working from home": 0.04,
+        "receipt": 0.04,
+        "invoice": 0.04,
+        "merchant": 0.05,
+    }
+    for phrase, weight in trustworthy_phrase_weights.items():
+        if phrase in lowered_story:
+            risk -= weight
+
+    if re.search(r"\b\d{1,2}\s+[a-z]+\s+\d{4}\b", lowered_story):
+        risk -= 0.14
+    if re.search(r"\b[a-z]+day evening\b|\b[a-z]+day morning\b|\b[a-z]+day afternoon\b", lowered_story):
+        risk -= 0.05
+    if re.search(r"gbp\s?\d[\d,]*", lowered_story):
+        risk -= 0.06
+    if re.search(r"\b\d{1,2}:\d{2}\b", lowered_story):
+        risk -= 0.04
+
+    if word_count < 20:
+        risk += 0.22
+    elif word_count < 40:
+        risk += 0.1
+    elif word_count >= 90:
+        risk -= 0.06
+
+    detail_markers = [
+        "because",
+        "when",
+        "while",
+        "after",
+        "attached",
+        "assessment",
+        "reference",
+        "receipt",
+        "invoice",
+        "repair",
+    ]
+    detail_hits = sum(1 for marker in detail_markers if marker in lowered_story)
+    if detail_hits >= 4:
+        risk -= 0.08
+
+    return round(min(max(risk, 0.02), 0.98), 2)
 
 
 def _score_behaviour_risk(claim_request: ClaimSubmissionRequest, claim_amount_ratio: float) -> float:

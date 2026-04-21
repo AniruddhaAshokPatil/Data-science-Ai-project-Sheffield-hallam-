@@ -641,7 +641,6 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
                 <th>Item</th>
                 <th>Amount</th>
                 <th>Status</th>
-                <th>Risk Summary</th>
                 <th>Next Step</th>
               </tr>
             </thead>
@@ -653,7 +652,6 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
                   <td>{claim.item_category ?? claim.itemCategory}</td>
                   <td>{claim.amount}</td>
                   <td>{claim.status}</td>
-                  <td>{claim.risk_summary ?? claim.riskSummary}</td>
                   <td>
                     {claim.next_step ?? claim.nextStep}
                     {claim.evidence_name || claim.evidenceName ? ` Evidence: ${claim.evidence_name ?? claim.evidenceName}` : ""}

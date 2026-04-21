@@ -24,6 +24,7 @@ async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
             "evidence_storage_path": "",
             "evidence_sha256": "",
             "cv_signal_summary": "I did not receive an evidence file for this claim.",
+            "analysis_reasons": ["No receipt or invoice was uploaded for this claim."],
             "duplicate_receipt_flag": 0,
             "image_tamper_flag": 0,
             "document_risk_score": 0.28,
@@ -49,20 +50,25 @@ async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
     document_risk_score = 0.08
     image_tamper_flag = 0
     summary_parts = [f"I stored the uploaded evidence as {stored_filename}."]
+    analysis_reasons = []
 
     if duplicate_match:
         document_risk_score += 0.26
-        summary_parts.append("I found that the file hash already exists in the evidence history.")
+        duplicate_reason = "Duplicate receipt detected because this file matches evidence already in the upload history."
+        summary_parts.append(duplicate_reason)
+        analysis_reasons.append(duplicate_reason)
 
     if suffix in IMAGE_EXTENSIONS:
         image_checks = _score_image_evidence(file_bytes)
         document_risk_score += image_checks["risk_delta"]
         image_tamper_flag = image_checks["image_tamper_flag"]
         summary_parts.append(image_checks["summary"])
+        analysis_reasons.extend(image_checks["reasons"])
     else:
         pdf_checks = _score_pdf_evidence(file_bytes)
         document_risk_score += pdf_checks["risk_delta"]
         summary_parts.append(pdf_checks["summary"])
+        analysis_reasons.extend(pdf_checks["reasons"])
 
     document_risk_score = round(min(document_risk_score, 0.95), 2)
     try:
@@ -83,6 +89,7 @@ async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
         "evidence_storage_path": storage_path_value,
         "evidence_sha256": file_hash,
         "cv_signal_summary": " ".join(summary_parts),
+        "analysis_reasons": analysis_reasons or ["Receipt file uploaded and passed the basic document checks."],
         "duplicate_receipt_flag": int(duplicate_match),
         "image_tamper_flag": int(image_tamper_flag),
         "document_risk_score": document_risk_score,
@@ -96,30 +103,39 @@ def _score_image_evidence(file_bytes: bytes) -> dict:
         width, height = image.size
         risk_delta = 0.0
         summary_parts = [f"I inspected the uploaded image at {width}x{height} pixels."]
+        reasons = []
 
         if min(width, height) < 300:
             risk_delta += 0.18
-            summary_parts.append("I marked the image as unusually small for a receipt or claim document.")
+            small_image_reason = "Possible edited image because the uploaded receipt is unusually small for a genuine document."
+            summary_parts.append(small_image_reason)
+            reasons.append(small_image_reason)
 
         aspect_ratio = max(width, height) / max(min(width, height), 1)
         if aspect_ratio > 4:
             risk_delta += 0.08
-            summary_parts.append("I found an extreme aspect ratio that may indicate cropping or an incomplete scan.")
+            cropped_reason = "Possible cropped or incomplete receipt because the image has an extreme aspect ratio."
+            summary_parts.append(cropped_reason)
+            reasons.append(cropped_reason)
 
         if image.mode in {"1", "P"}:
             risk_delta += 0.06
-            summary_parts.append("I found a low-color image mode that can reduce document quality.")
+            palette_reason = "Possible edited image because the receipt uses a low-colour image mode that often hides detail."
+            summary_parts.append(palette_reason)
+            reasons.append(palette_reason)
 
         return {
             "risk_delta": round(risk_delta, 2),
             "image_tamper_flag": int(risk_delta >= 0.18),
             "summary": " ".join(summary_parts),
+            "reasons": reasons or ["Receipt image uploaded and passed the basic visual checks."],
         }
     except (UnidentifiedImageError, OSError):
         return {
             "risk_delta": 0.3,
             "image_tamper_flag": 1,
             "summary": "I could not read the uploaded image cleanly, so I raised the document-risk score.",
+            "reasons": ["Possible edited image because the receipt could not be read as a normal image file."],
         }
 
 
@@ -127,12 +143,19 @@ def _score_pdf_evidence(file_bytes: bytes) -> dict:
     size_kb = len(file_bytes) / 1024
     risk_delta = 0.06
     summary_parts = [f"I inspected the uploaded PDF metadata and found a file size of {size_kb:.1f} KB."]
+    reasons = []
 
     if size_kb < 25:
         risk_delta += 0.12
-        summary_parts.append("I marked the PDF as unusually small for a full receipt or invoice document.")
+        pdf_reason = "Possible incomplete receipt because the PDF is unusually small for a full invoice or receipt."
+        summary_parts.append(pdf_reason)
+        reasons.append(pdf_reason)
 
-    return {"risk_delta": round(risk_delta, 2), "summary": " ".join(summary_parts)}
+    return {
+        "risk_delta": round(risk_delta, 2),
+        "summary": " ".join(summary_parts),
+        "reasons": reasons or ["Receipt PDF uploaded and passed the basic file checks."],
+    }
 
 
 def _append_evidence_record(*, stored_filename: str, media_type: str, storage_path: Path, file_hash: str) -> None:

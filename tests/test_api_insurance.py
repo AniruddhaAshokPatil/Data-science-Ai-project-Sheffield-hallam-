@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from src.api.auth import hash_password
 from src.api.config import settings
 from src.api.db import init_database, upsert_user
+from src.api.services.insurance_data import _score_email_risk
 from src.api.services.insurance_data import load_claim_history
 from src.api.main import app
 
@@ -219,3 +220,124 @@ def test_claim_submission_with_evidence_uploads_file_and_scores_document_risk():
     assert payload["evidence_summary"]["evidence_name"] == "receipt.png"
     assert payload["evidence_summary"]["evidence_storage_path"]
     assert payload["evidence_summary"]["document_risk_score"] > 0
+    assert any("Possible edited image" in reason for reason in payload["evidence_summary"]["document_reasons"])
+
+
+def test_email_risk_scoring_creates_clearer_gap_between_genuine_and_suspicious_claims():
+    genuine_story = (
+        "I would like to submit a claim for accidental damage to my laptop under my gadget insurance policy. "
+        "On 14 March 2025, I accidentally knocked a glass of water over my desk while working from home. "
+        "The water spilled onto my laptop and the device stopped functioning shortly afterwards. "
+        "I have attached the original purchase receipt and the repair assessment from a local technician."
+    )
+    suspicious_story = (
+        "I need an urgent full payout for my very expensive laptop that was stolen yesterday. "
+        "I do not remember the exact location because it happened very fast and I need the money sent to my updated bank account."
+    )
+
+    genuine_risk = _score_email_risk(genuine_story)
+    suspicious_risk = _score_email_risk(suspicious_story)
+
+    assert genuine_risk <= 0.2
+    assert suspicious_risk >= 0.75
+    assert suspicious_risk - genuine_risk >= 0.55
+
+
+def test_claim_submission_with_evidence_returns_explicit_receipt_reasons():
+    user_login = login_as("demo_user", "UserPass123!")
+    sample_png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn7h0wAAAAASUVORK5CYII="
+    )
+
+    response = client.post(
+        "/api/insurance/claims/with-evidence",
+        headers={"Authorization": f"Bearer {user_login['access_token']}"},
+        data={
+            "claimant_name": "Ethan Cole",
+            "claimant_email": "ethan@example.com",
+            "policy_type": "gadget",
+            "coverage_tier": "premium",
+            "item_category": "phone",
+            "incident_type": "theft",
+            "claim_amount_gbp": "950",
+            "estimated_item_value_gbp": "899",
+            "prior_claims_count": "1",
+            "claims_last_12_months": "1",
+            "days_since_policy_start": "45",
+            "recent_high_value_purchase_flag": "false",
+            "unusual_spend_spike_flag": "false",
+            "account_login_location_change_flag": "false",
+            "multiple_devices_last_7_days_flag": "false",
+            "address_change_last_30_days_flag": "false",
+            "phone_change_last_30_days_flag": "false",
+            "bank_detail_change_last_30_days_flag": "false",
+            "late_night_submission_flag": "false",
+            "weekend_submission_flag": "false",
+            "receipt_present_flag": "true",
+            "receipt_mismatch_flag": "true",
+            "duplicate_receipt_flag": "false",
+            "image_tamper_flag": "false",
+            "claim_story": "I am submitting my phone theft claim with the uploaded receipt for review.",
+        },
+        files={"evidence_file": ("receipt.png", sample_png, "image/png")},
+    )
+
+    assert response.status_code == 201
+    reasons = response.json()["evidence_summary"]["document_reasons"]
+
+    assert any("Amount mismatch" in reason for reason in reasons)
+    assert any("Possible edited image" in reason for reason in reasons)
+
+
+def test_second_matching_receipt_upload_returns_duplicate_reason():
+    user_login = login_as("demo_user", "UserPass123!")
+    sample_png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn7h0wAAAAASUVORK5CYII="
+    )
+
+    common_payload = {
+        "claimant_name": "Maya Stone",
+        "claimant_email": "maya@example.com",
+        "policy_type": "gadget",
+        "coverage_tier": "standard",
+        "item_category": "tablet",
+        "incident_type": "accidental_damage",
+        "claim_amount_gbp": "400",
+        "estimated_item_value_gbp": "399",
+        "prior_claims_count": "0",
+        "claims_last_12_months": "0",
+        "days_since_policy_start": "100",
+        "recent_high_value_purchase_flag": "false",
+        "unusual_spend_spike_flag": "false",
+        "account_login_location_change_flag": "false",
+        "multiple_devices_last_7_days_flag": "false",
+        "address_change_last_30_days_flag": "false",
+        "phone_change_last_30_days_flag": "false",
+        "bank_detail_change_last_30_days_flag": "false",
+        "late_night_submission_flag": "false",
+        "weekend_submission_flag": "false",
+        "receipt_present_flag": "true",
+        "receipt_mismatch_flag": "false",
+        "duplicate_receipt_flag": "false",
+        "image_tamper_flag": "false",
+        "claim_story": "I am submitting a tablet claim with my receipt attached for review.",
+    }
+
+    first_response = client.post(
+        "/api/insurance/claims/with-evidence",
+        headers={"Authorization": f"Bearer {user_login['access_token']}"},
+        data=common_payload,
+        files={"evidence_file": ("receipt.png", sample_png, "image/png")},
+    )
+    second_response = client.post(
+        "/api/insurance/claims/with-evidence",
+        headers={"Authorization": f"Bearer {user_login['access_token']}"},
+        data={**common_payload, "claimant_name": "Maya Stone 2", "claimant_email": "maya2@example.com"},
+        files={"evidence_file": ("receipt.png", sample_png, "image/png")},
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    reasons = second_response.json()["evidence_summary"]["document_reasons"]
+
+    assert any("Duplicate receipt detected" in reason for reason in reasons)
