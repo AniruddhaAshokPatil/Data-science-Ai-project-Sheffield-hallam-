@@ -1,7 +1,3 @@
-Below is a **clean, distinction-level README** written to feel natural, grounded, and understandable. It avoids inflated language and keeps a clear line between what the system does, what data it uses, and how everything connects.
-
----
-
 # **ShieldWise — Insurance Claim Fraud Detection Platform**
 
 ShieldWise is a practical fraud detection system built around a real insurance workflow. It focuses on how claims are submitted, reviewed, and flagged in a live environment rather than just training models in isolation.
