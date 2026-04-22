@@ -1,4 +1,4 @@
-# **ShieldWise — Insurance Claim Fraud Detection Platform**
+# **ShieldWise - Insurance Claim Fraud Detection Platform**
 
 ShieldWise is a practical fraud detection system built around a real insurance workflow. It focuses on how claims are submitted, reviewed, and flagged in a live environment rather than just training models in isolation.
 
