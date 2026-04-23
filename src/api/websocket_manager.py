@@ -11,7 +11,7 @@ from src.api.services.insurance_dashboard import build_live_alert_event
 
 class AlertStreamManager:
     def __init__(self) -> None:
-        # I keep a simple counter so every live alert sent over the socket gets a new event id.
+        # The counter gives each generated alert a stable event id for the live dashboard.
         self._event_index = 0
         self._connections: set[WebSocket] = set()
 
@@ -20,7 +20,7 @@ class AlertStreamManager:
         self._connections.add(websocket)
 
         try:
-            # I send one immediate event so the dashboard has a live message as soon as it connects.
+            # Send one event straight away so the dashboard is not empty after connecting.
             event = build_live_alert_event(self._event_index)
             self._event_index += 1
             await websocket.send_json(event.model_dump())

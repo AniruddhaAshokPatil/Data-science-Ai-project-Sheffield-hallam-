@@ -1,1 +1,1 @@
-"""I expose the insurance API package here so imports stay predictable."""
+"""Insurance API package used by the ShieldWise backend."""

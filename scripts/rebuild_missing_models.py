@@ -21,7 +21,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
-# I keep the paths together here so it is easy to see where everything lives.
+# Core paths are grouped here so the training outputs are easy to find.
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RECEIPT_MODELS_DIR = os.path.join(REPO_ROOT, "backend", "receipts_models")
 ID_MODELS_DIR = os.path.join(REPO_ROOT, "backend", "saved_models")
@@ -32,20 +32,19 @@ RANDOM_SEED = 42
 
 
 def load_json_file(file_path):
-    # I keep JSON loading in one place so the read steps stay easy to follow.
+    # Small helper for reading JSON config and metrics files.
     with open(file_path, "r") as file:
         return json.load(file)
 
 
 def save_json_file(file_path, data):
-    # I keep JSON saving in one place so the write steps also stay simple.
+    # Small helper for writing JSON outputs in a readable format.
     with open(file_path, "w") as file:
         json.dump(data, file, indent=2)
 
 
 def find_receipt_dataset_root():
-    # I prefer the local data folder first because I want this project to use
-    # the repo's main data area whenever that dataset is available there.
+    # Prefer the main data folder, then fall back to the original Datasets folder.
     possible_paths = [
         os.path.join(REPO_ROOT, "data", "raw", "cv", "Receipt_Fraud_Dataset"),
         os.path.join(REPO_ROOT, "Datasets", "Receipt_Fraud_Dataset"),
@@ -56,14 +55,13 @@ def find_receipt_dataset_root():
             return path
 
     raise FileNotFoundError(
-        "I could not find the receipt dataset in data/raw/cv/Receipt_Fraud_Dataset "
+        "Receipt dataset not found in data/raw/cv/Receipt_Fraud_Dataset "
         "or Datasets/Receipt_Fraud_Dataset."
     )
 
 
 def build_receipt_dataframe(split_folder):
-    # I read the COCO annotation file so I can turn the receipt data
-    # into a simple two-column table: file path and label.
+    # COCO annotations are converted into a simple table with file path and binary label.
     annotation_path = os.path.join(split_folder, "_annotations_coco.json")
 
     data = load_json_file(annotation_path)
@@ -88,7 +86,7 @@ def build_receipt_dataframe(split_folder):
         if not os.path.exists(filepath):
             continue
 
-        # I mark an image as fraudulent if it has at least one annotation.
+        # Any image with at least one annotation is treated as fraudulent for this binary classifier.
         is_fraudulent = 1 if annotation_count_by_id.get(image_id, 0) > 0 else 0
 
         rows.append(
@@ -103,8 +101,7 @@ def build_receipt_dataframe(split_folder):
 
 
 def make_receipt_generator(datagen, dataframe, shuffle):
-    # I use flow_from_dataframe because it is one of the simplest ways
-    # to turn a folder of images into batches for Keras training.
+    # flow_from_dataframe turns the file-path table into batches for Keras training.
     generator = datagen.flow_from_dataframe(
         dataframe=dataframe,
         x_col="filepath",
@@ -120,8 +117,7 @@ def make_receipt_generator(datagen, dataframe, shuffle):
 
 
 def build_receipt_resnet_model():
-    # I start from ResNet50 with ImageNet weights, then add a small
-    # custom head for the receipt fraud task.
+    # ResNet50 starts with ImageNet weights, then a small custom head learns the receipt task.
     base_model = ResNet50(
         weights="imagenet",
         include_top=False,
@@ -150,7 +146,7 @@ def build_receipt_resnet_model():
 def rebuild_receipt_resnet():
     receipt_dataset_root = find_receipt_dataset_root()
 
-    # I split the folders out clearly here so the training flow is easier to read.
+    # The dataset already has train, validation, and test folders.
     train_folder = os.path.join(receipt_dataset_root, "train")
     valid_folder = os.path.join(receipt_dataset_root, "valid")
     test_folder = os.path.join(receipt_dataset_root, "test")
@@ -175,8 +171,7 @@ def rebuild_receipt_resnet():
 
     model = build_receipt_resnet_model()
 
-    # I use a simple class-weight rule so the model pays more attention
-    # if one class appears more often than the other.
+    # Class weights reduce the effect of class imbalance during training.
     legitimate_count = (train_dataframe["label"] == "0").sum()
     fraudulent_count = (train_dataframe["label"] == "1").sum()
     positive_weight = float(legitimate_count) / max(1, fraudulent_count)
@@ -231,9 +226,8 @@ def rebuild_receipt_resnet():
 
 
 def rebuild_id_resnet_surrogate():
-    # I cannot fully retrain the original ID ResNet model here because the
-    # MIDV training dataset is not present in this repo. So I create a
-    # loadable replacement from the working MobileNet model so the app can run.
+    # The full MIDV training dataset is not included, so this creates a loadable
+    # ResNet replacement from the available MobileNet model weights.
     mobilenet_path = os.path.join(ID_MODELS_DIR, "mobilenet_final.h5")
     resnet_path = os.path.join(ID_MODELS_DIR, "resnet_final.h5")
 
@@ -247,16 +241,16 @@ def main():
     os.makedirs(RECEIPT_MODELS_DIR, exist_ok=True)
     os.makedirs(ID_MODELS_DIR, exist_ok=True)
 
-    print("I am rebuilding the missing receipt ResNet model from the tracked receipt dataset.")
+    print("Rebuilding the missing receipt ResNet model from the tracked receipt dataset.")
     receipt_metrics = rebuild_receipt_resnet()
 
-    print("I am creating a loadable replacement for the missing ID ResNet model.")
+    print("Creating a loadable replacement for the missing ID ResNet model.")
     rebuild_id_resnet_surrogate()
 
-    print("I finished rebuilding the missing model files.")
-    print("I saved the receipt model here:", os.path.join(RECEIPT_MODELS_DIR, "resnet50_receipt_fraud.keras"))
-    print("I updated the receipt metrics to:", receipt_metrics)
-    print("I saved the ID replacement model here:", os.path.join(ID_MODELS_DIR, "resnet_final.h5"))
+    print("Finished rebuilding the missing model files.")
+    print("Receipt model saved here:", os.path.join(RECEIPT_MODELS_DIR, "resnet50_receipt_fraud.keras"))
+    print("Receipt metrics updated to:", receipt_metrics)
+    print("ID replacement model saved here:", os.path.join(ID_MODELS_DIR, "resnet_final.h5"))
 
 
 if __name__ == "__main__":

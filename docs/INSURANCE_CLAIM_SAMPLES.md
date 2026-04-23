@@ -1,24 +1,24 @@
 # Insurance Claim Samples
 
-I created this file so I can keep a few realistic examples of insurance claim inputs in one place.
-I can use these samples to test the UI, demonstrate the product narrative, and explain the fraud-screening logic more clearly.
+This file keeps a few realistic examples of insurance claim inputs in one place.
+These samples support UI testing, product demonstrations, and clear explanation of the fraud-screening logic.
 
 ## Suggested Behavioural Or Claim-History Fields
 
-I recommend starting with a small set of fields that are easy to explain and believable in an insurance claim workflow:
+The project starts with a small set of fields that are easy to explain and believable in an insurance claim workflow:
 
-| Field | Meaning | Why I would keep it |
+| Field | Meaning | Why it is useful |
 | --- | --- | --- |
-| `prior_claims_count` | Number of previous claims by the claimant | I use this to spot repeat claiming behaviour |
-| `days_since_policy_start` | How long the policy has been active before the claim | I use this to detect early claims soon after policy purchase |
-| `claim_amount_vs_item_value_ratio` | Claimed amount divided by expected item value | I use this to catch inflation or overstatement |
-| `recent_high_value_purchase_flag` | Whether the claimant recently showed unusual high-value activity | I use this as a simple behavioural risk signal |
-| `late_night_submission_flag` | Whether the claim was submitted at an unusual time | I use this as a weak but useful contextual flag |
-| `receipt_mismatch_flag` | Whether the claimed story and receipt details do not align | I use this to connect text and evidence together |
-| `duplicate_receipt_flag` | Whether the uploaded receipt appears reused | I use this to detect repeated or fabricated proof |
-| `address_change_last_30_days_flag` | Whether the address changed shortly before the claim | I use this as a supporting identity-risk signal |
-| `bank_detail_change_last_30_days_flag` | Whether payout details changed recently | I use this to highlight account-change risk |
-| `claims_last_12_months` | Number of claims in the last year | I use this to measure short-term claim frequency |
+| `prior_claims_count` | Number of previous claims by the claimant | Helps show repeat claiming behaviour |
+| `days_since_policy_start` | How long the policy has been active before the claim | Helps detect early claims soon after policy purchase |
+| `claim_amount_vs_item_value_ratio` | Claimed amount divided by expected item value | Helps catch inflation or overstatement |
+| `recent_high_value_purchase_flag` | Whether the claimant recently showed unusual high-value activity | Provides a simple behavioural risk signal |
+| `late_night_submission_flag` | Whether the claim was submitted at an unusual time | Provides a weak but useful contextual flag |
+| `receipt_mismatch_flag` | Whether the claimed story and receipt details do not align | Connects text and evidence together |
+| `duplicate_receipt_flag` | Whether the uploaded receipt appears reused | Helps detect repeated or fabricated proof |
+| `address_change_last_30_days_flag` | Whether the address changed shortly before the claim | Supports identity-risk review |
+| `bank_detail_change_last_30_days_flag` | Whether payout details changed recently | Highlights account-change risk |
+| `claims_last_12_months` | Number of claims in the last year | Measures short-term claim frequency |
 
 ## Sample Claim Email Messages
 
@@ -41,11 +41,11 @@ Daniel Morgan
 
 ### Why this looks genuine
 
-- I give a clear date and event
-- I describe a believable sequence of events
-- I mention supporting evidence naturally
-- I do not push for urgency in an unusual way
-- I keep the claimed loss consistent with the story
+- Gives a clear date and event
+- Describes a believable sequence of events
+- Mentions supporting evidence naturally
+- Does not push for urgency in an unusual way
+- Keeps the claimed loss consistent with the story
 
 ### 2. Fraudulent Claim Example
 
@@ -64,13 +64,13 @@ Daniel
 
 ### Why this looks suspicious
 
-- I stay vague about the incident details
-- I emphasise urgency and payout pressure
-- I give a high claimed value without much context
-- I mention changed bank details during the claim
-- I leave room for mismatch between the story and the receipt
+- Stays vague about the incident details
+- Emphasises urgency and payout pressure
+- Gives a high claimed value without much context
+- Mentions changed bank details during the claim
+- Leaves room for mismatch between the story and the receipt
 
-## How I Would Use These In The App
+## How These Samples Are Used In The App
 
-I would feed the email text into the NLP model, pass the receipt image into the CV model, and combine the claim-history fields into a simple behavioural risk scorer.
-I would then present one final recommendation such as `Low Risk`, `Review Needed`, or `High Risk`.
+The email text is passed into the NLP model, the receipt image is used by the evidence workflow, and the claim-history fields are combined in the behavioural risk scorer.
+The app then presents one final recommendation such as `Low Risk`, `Review Needed`, or `High Risk`.

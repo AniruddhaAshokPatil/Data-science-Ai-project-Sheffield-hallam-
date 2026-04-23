@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 class Settings:
-    # I resolve the repository root once so every API module can reuse the same paths.
+    # The repository root is calculated once so every API module can reuse the same base paths.
     REPO_ROOT = Path(__file__).resolve().parents[2]
     CLAIMS_DATA_PATH = REPO_ROOT / "data" / "raw" / "insurance_claims" / "claim_history_detailed.csv"
     EVIDENCE_UPLOADS_DIR = Path(
@@ -15,7 +15,7 @@ class Settings:
     API_ENV = os.getenv("SHIELDWISE_API_ENV", "development")
     DEBUG = os.getenv("SHIELDWISE_DEBUG", "false").lower() == "true"
 
-    # I keep the allowed origins explicit so the React frontend can talk to the API in development.
+    # Explicit allowed origins let the React frontend call the API during local development.
     ALLOWED_ORIGINS = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",

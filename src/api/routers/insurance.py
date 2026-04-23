@@ -23,19 +23,19 @@ router = APIRouter(prefix="/api/insurance", tags=["insurance"])
 
 @router.get("/home", response_model=HomeResponse)
 def insurance_home() -> HomeResponse:
-    # I return the public website data here so the homepage can render from the API.
+    # Public homepage data is served from the API so the frontend stays data-driven.
     return build_home_payload()
 
 
 @router.get("/customer-dashboard", response_model=CustomerDashboardResponse)
 def customer_dashboard(current_user: AuthenticatedUser = Depends(require_user_role)) -> CustomerDashboardResponse:
-    # I return a sample policyholder dashboard payload here for the user-facing claim view.
+    # The policyholder dashboard only shows claims linked to the signed-in account.
     return build_customer_dashboard_payload(claimant_email=current_user.email)
 
 
 @router.get("/company-dashboard", response_model=CompanyDashboardResponse)
 def company_dashboard(_: AuthenticatedUser = Depends(require_investigator_role)) -> CompanyDashboardResponse:
-    # I return the internal fraud-operations payload here so the company dashboard can stay live.
+    # Investigator-only dashboard data contains the review queue and live alert feed.
     return build_company_dashboard_payload()
 
 
@@ -44,7 +44,7 @@ async def submit_claim(
     claim_request: ClaimSubmissionRequest,
     current_user: AuthenticatedUser = Depends(require_customer_role),
 ) -> ClaimSubmissionResponse:
-    # I persist the new insurance claim here so it can show up across the user and company dashboards.
+    # The signed-in account supplies the claimant identity, rather than trusting form-entered identity fields.
     claim_request = claim_request.model_copy(
         update={
             "claimant_name": current_user.full_name,
@@ -84,9 +84,10 @@ async def submit_claim_with_evidence(
     image_tamper_flag: bool = Form(False),
     claim_story: str = Form(...),
     evidence_file: UploadFile | None = File(None),
+    id_card_file: UploadFile | None = File(None),
     current_user: AuthenticatedUser = Depends(require_customer_role),
 ) -> ClaimSubmissionResponse:
-    # I parse the multipart form here so the frontend can submit claim details and evidence together.
+    # Multipart form data allows claim details, receipt evidence, and an ID card to be submitted together.
     claim_request = ClaimSubmissionRequest(
         claimant_name=current_user.full_name,
         claimant_email=current_user.email,
@@ -115,6 +116,7 @@ async def submit_claim_with_evidence(
         claim_story=claim_story,
     )
     evidence_summary = await analyze_and_store_evidence(evidence_file)
-    response = create_submitted_claim(claim_request, evidence_summary=evidence_summary)
+    id_card_summary = await analyze_and_store_evidence(id_card_file)
+    response = create_submitted_claim(claim_request, evidence_summary=evidence_summary, id_card_summary=id_card_summary)
     await alert_stream_manager.broadcast_alert(response.alert)
     return response

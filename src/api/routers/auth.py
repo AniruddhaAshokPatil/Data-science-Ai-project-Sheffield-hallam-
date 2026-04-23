@@ -10,17 +10,17 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/login", response_model=LoginResponse)
 def login(login_request: LoginRequest) -> LoginResponse:
-    # I authenticate against the stored app users here so the API can issue a role-aware access token.
+    # Check the username and password, then return a token that includes the user's role.
     user_row = fetch_user(login_request.username)
     if user_row is None or int(user_row["is_active"]) != 1:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="I could not find an active user account.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No active user account was found.")
 
     if not verify_password(
         login_request.password,
         salt=user_row["password_salt"],
         password_hash=user_row["password_hash"],
     ):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="I could not verify the login credentials.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="The login credentials could not be verified.")
 
     access_token = create_access_token(
         username=user_row["username"],

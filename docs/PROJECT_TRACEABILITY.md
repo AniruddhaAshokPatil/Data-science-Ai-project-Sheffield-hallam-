@@ -2,7 +2,7 @@
 
 Audit date: 2026-04-21
 
-This note records what is actually tracked in the repository after cleanup. I use it as the ground truth for the submission narrative so the README, issue notes, and codebase all describe the same project.
+This note records what is actually tracked in the repository after cleanup. It is the ground truth for the submission narrative so the README, issue notes, and codebase all describe the same project.
 
 ## Current Project Shape
 
@@ -38,7 +38,7 @@ The following legacy materials were removed because they were not part of the cu
 - transaction-only datasets in `data/raw/transactions/`
 - transaction-only training script and saved model artifacts
 
-I removed them because they duplicated older planning or draft material without contributing to the current runnable submission.
+They were removed because they duplicated older planning or draft material without contributing to the current runnable submission.
 
 ## Current Execution Story
 
@@ -66,8 +66,8 @@ These files represent the most important submission logic:
 
 ## Identity Integrity Note
 
-During cleanup I also tightened the claim-submission flow so a normal policyholder submits claims as the signed-in account identity rather than arbitrary form-entered name and email values. That behaviour is now covered in `tests/test_api_insurance.py`.
+During cleanup, the claim-submission flow was tightened so a normal policyholder submits claims as the signed-in account identity rather than arbitrary form-entered name and email values. That behaviour is now covered in `tests/test_api_insurance.py`.
 
 ## Ground Rule
 
-If older notes, issue text, and tracked files disagree, I treat the tracked files and runnable tests as the source of truth. This document should stay aligned with the code that is actually present in `main`.
+If older notes, issue text, and tracked files disagree, the tracked files and runnable tests are the source of truth. This document should stay aligned with the code that is actually present in `main`.

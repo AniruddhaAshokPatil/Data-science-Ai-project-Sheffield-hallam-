@@ -16,7 +16,7 @@ from src.api.websocket_manager import alert_stream_manager
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # I initialise the runtime database and upload directory here so deployments boot into a ready state.
+    # Prepare the local database and upload folder before the API starts handling requests.
     init_database()
     settings.EVIDENCE_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
     _seed_default_users()
@@ -26,7 +26,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title="ShieldWise Insurance Fraud API",
     version="1.0.0",
-    description="I provide the claims, dashboard, and live alert endpoints for the insurance fraud website.",
+    description="Claims, dashboard, and live alert endpoints for the ShieldWise insurance fraud website.",
     lifespan=lifespan,
 )
 
@@ -45,7 +45,7 @@ app.include_router(insurance_router)
 
 @app.get("/")
 def api_root() -> dict:
-    # I expose a small root payload here so the API has a human-readable landing endpoint in the browser.
+    # This lightweight landing response makes the API easier to inspect in a browser.
     return {
         "name": app.title,
         "version": app.version,
@@ -58,7 +58,7 @@ def api_root() -> dict:
 
 @app.websocket("/ws/alerts")
 async def claim_alerts_stream(websocket: WebSocket) -> None:
-    # I keep the live alert stream separate from the REST endpoints because the dashboard needs push updates.
+    # WebSockets let the investigator dashboard receive new alert events without refreshing the page.
     try:
         authenticated_user = get_websocket_user(token=websocket.query_params.get("token"))
         if authenticated_user.role != "investigator":
@@ -72,7 +72,7 @@ async def claim_alerts_stream(websocket: WebSocket) -> None:
 
 
 def _seed_default_users() -> None:
-    # I seed default demo accounts here so the production-style auth flow works out of the box in local environments.
+    # Demo accounts make the role-based login flow available immediately in local development.
     user_salt, user_hash = hash_password(os.getenv("SHIELDWISE_DEFAULT_USER_PASSWORD", "UserPass123!"))
     upsert_user_with_email(
         username=os.getenv("SHIELDWISE_DEFAULT_USER_USERNAME", "demo_user"),

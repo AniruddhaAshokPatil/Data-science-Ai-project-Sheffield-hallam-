@@ -8,13 +8,13 @@ router = APIRouter(tags=["health"])
 
 @router.get("/health/live")
 def health_live() -> dict:
-    # I keep the liveness endpoint minimal so deployment and smoke checks stay stable.
+    # Liveness only confirms that the API process can respond.
     return {"status": "ok"}
 
 
 @router.get("/health/ready")
 def health_ready() -> dict:
-    # I verify the runtime dependencies here so deployments can fail fast if storage or data paths are missing.
+    # Readiness checks the local resources needed by the app before it handles real traffic.
     checks = {
         "database_ready": database_ready(),
         "claims_dataset_present": settings.CLAIMS_DATA_PATH.exists(),

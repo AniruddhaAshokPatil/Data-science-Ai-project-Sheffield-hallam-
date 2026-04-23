@@ -189,13 +189,13 @@ def print_final_summary(results):
     print_title("7. Final Summary")
     failed_sections = [section_name for section_name, section_result in results.items() if not section_result]
     if failed_sections:
-        print("I found a few things that still need attention.")
+        print("A few items still need attention.")
         print("Sections with problems:")
         for section_name in failed_sections:
             print(f"- {section_name}")
         return 1
 
-    print("Everything I checked looks good.")
+    print("All validation checks passed.")
     print("The cleaned repository layout, main apps, and tracked model files all line up.")
     return 0
 

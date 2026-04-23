@@ -12,8 +12,8 @@ from src.api.config import settings
 from src.api.db import evidence_hash_exists, insert_evidence_file
 
 
-ALLOWED_EVIDENCE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".pdf"}
-IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp"}
+ALLOWED_EVIDENCE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".pdf"}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
 
 async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
@@ -23,7 +23,7 @@ async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
             "evidence_media_type": "",
             "evidence_storage_path": "",
             "evidence_sha256": "",
-            "cv_signal_summary": "I did not receive an evidence file for this claim.",
+            "cv_signal_summary": "No evidence file was uploaded for this claim.",
             "analysis_reasons": ["No receipt or invoice was uploaded for this claim."],
             "duplicate_receipt_flag": 0,
             "image_tamper_flag": 0,
@@ -33,11 +33,11 @@ async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
 
     suffix = Path(upload.filename).suffix.lower()
     if suffix not in ALLOWED_EVIDENCE_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="I only accept JPG, PNG, BMP, or PDF evidence files.")
+        raise HTTPException(status_code=400, detail="Accepted evidence formats are JPG, PNG, BMP, TIFF, and PDF.")
 
     file_bytes = await upload.read()
     if not file_bytes:
-        raise HTTPException(status_code=400, detail="I received an empty evidence file.")
+        raise HTTPException(status_code=400, detail="The uploaded evidence file is empty.")
 
     file_hash = hashlib.sha256(file_bytes).hexdigest()
     duplicate_match = evidence_hash_exists(file_hash)
@@ -49,7 +49,7 @@ async def analyze_and_store_evidence(upload: UploadFile | None) -> dict:
 
     document_risk_score = 0.08
     image_tamper_flag = 0
-    summary_parts = [f"I stored the uploaded evidence as {stored_filename}."]
+    summary_parts = [f"The uploaded evidence was stored as {stored_filename}."]
     analysis_reasons = []
 
     if duplicate_match:
@@ -102,7 +102,7 @@ def _score_image_evidence(file_bytes: bytes) -> dict:
         image = Image.open(BytesIO(file_bytes))
         width, height = image.size
         risk_delta = 0.0
-        summary_parts = [f"I inspected the uploaded image at {width}x{height} pixels."]
+        summary_parts = [f"The uploaded image was inspected at {width}x{height} pixels."]
         reasons = []
 
         if min(width, height) < 300:
@@ -134,7 +134,7 @@ def _score_image_evidence(file_bytes: bytes) -> dict:
         return {
             "risk_delta": 0.3,
             "image_tamper_flag": 1,
-            "summary": "I could not read the uploaded image cleanly, so I raised the document-risk score.",
+            "summary": "The uploaded image could not be read cleanly, so the document-risk score was raised.",
             "reasons": ["Possible edited image because the receipt could not be read as a normal image file."],
         }
 
@@ -142,7 +142,7 @@ def _score_image_evidence(file_bytes: bytes) -> dict:
 def _score_pdf_evidence(file_bytes: bytes) -> dict:
     size_kb = len(file_bytes) / 1024
     risk_delta = 0.06
-    summary_parts = [f"I inspected the uploaded PDF metadata and found a file size of {size_kb:.1f} KB."]
+    summary_parts = [f"The uploaded PDF metadata was inspected and has a file size of {size_kb:.1f} KB."]
     reasons = []
 
     if size_kb < 25:

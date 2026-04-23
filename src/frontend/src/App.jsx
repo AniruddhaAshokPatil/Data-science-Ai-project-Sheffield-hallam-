@@ -10,6 +10,86 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const ALERTS_WS_URL = API_BASE_URL.replace(/^http/, "ws") + "/ws/alerts";
+const CLAIM_SIGNAL_FIELDS = [
+  {
+    fieldName: "recent_high_value_purchase_flag",
+    label: "Recent high-value purchase",
+    helpText:
+      "Select this if the item was bought recently and was a high-value purchase. Please keep the purchase receipt ready so we can confirm the item details."
+  },
+  {
+    fieldName: "unusual_spend_spike_flag",
+    label: "Unusual spending spike",
+    helpText:
+      "Select this if there was an unusual increase in related spending before the claim. Please provide any useful context in your message body."
+  },
+  {
+    fieldName: "account_login_location_change_flag",
+    label: "Login location changed",
+    helpText:
+      "Select this if you recently signed in from a new town, country, workplace, or travel location. Please make sure your account details are up to date."
+  },
+  {
+    fieldName: "multiple_devices_last_7_days_flag",
+    label: "Multiple devices in 7 days",
+    helpText:
+      "Select this if you used more than one phone, laptop, tablet, or browser to access your account in the last week."
+  },
+  {
+    fieldName: "address_change_last_30_days_flag",
+    label: "Address changed recently",
+    helpText:
+      "Select this if you changed your home or correspondence address recently. Please check that the address on your policy is correct."
+  },
+  {
+    fieldName: "phone_change_last_30_days_flag",
+    label: "Phone changed recently",
+    helpText:
+      "Select this if your contact number changed recently. Please make sure we can reach you on the phone number saved on your account."
+  },
+  {
+    fieldName: "bank_detail_change_last_30_days_flag",
+    label: "Bank details changed recently",
+    helpText:
+      "Select this if your payout bank details changed recently. Please double-check the account details before submitting your claim."
+  },
+  {
+    fieldName: "late_night_submission_flag",
+    label: "Late-night submission",
+    helpText:
+      "Select this if you are submitting the claim late at night. If anything needs clarification, add a short note in your message body."
+  },
+  {
+    fieldName: "weekend_submission_flag",
+    label: "Weekend submission",
+    helpText:
+      "Select this if you are submitting the claim during the weekend. We will still record your claim and guide you through the next steps."
+  },
+  {
+    fieldName: "receipt_present_flag",
+    label: "Receipt present",
+    helpText:
+      "Keep this selected if you have a receipt, invoice, or proof of purchase to upload. Clear images, PDFs, or TIFF files are accepted."
+  },
+  {
+    fieldName: "receipt_mismatch_flag",
+    label: "Receipt mismatch",
+    helpText:
+      "Select this if the receipt amount, date, merchant, or item details do not exactly match your claim. Please explain the difference in your message body."
+  },
+  {
+    fieldName: "duplicate_receipt_flag",
+    label: "Duplicate receipt",
+    helpText:
+      "Select this if you have already used this same receipt for another claim or if you are uploading a copy of an earlier document."
+  },
+  {
+    fieldName: "image_tamper_flag",
+    label: "Image tamper suspected",
+    helpText:
+      "Select this if the image is cropped, edited, unclear, or difficult to read. If possible, upload the clearest original version of the document."
+  }
+];
 
 function App() {
   const [authState, setAuthState] = useState({
@@ -46,6 +126,7 @@ function App() {
   });
   const [submissionState, setSubmissionState] = useState({ status: "idle", message: "" });
   const [selectedEvidenceFile, setSelectedEvidenceFile] = useState(null);
+  const [selectedIdCardFile, setSelectedIdCardFile] = useState(null);
 
   const selectedEmail =
     homeData.claim_email_samples[activeEmailSample] ||
@@ -150,10 +231,16 @@ function App() {
     try {
       const formData = new FormData();
       Object.entries(formValues).forEach(([fieldName, fieldValue]) => {
+        if (fieldName === "claim_subject" || fieldName === "claim_message_body") {
+          return;
+        }
         formData.append(fieldName, String(fieldValue));
       });
       if (selectedEvidenceFile) {
         formData.append("evidence_file", selectedEvidenceFile);
+      }
+      if (selectedIdCardFile) {
+        formData.append("id_card_file", selectedIdCardFile);
       }
 
       const response = await fetch(`${API_BASE_URL}/api/insurance/claims/with-evidence`, {
@@ -184,6 +271,7 @@ function App() {
         message: `Claim ${payload.claim_id} submitted successfully and added to the investigation workflow.`
       });
       setSelectedEvidenceFile(null);
+      setSelectedIdCardFile(null);
       setActiveView(authState.role === "investigator" ? "company" : "customer");
     } catch (error) {
       setSubmissionState({
@@ -279,7 +367,9 @@ function App() {
             claims={customerData.claims}
             onSubmitClaim={handleClaimSubmission}
             onSelectEvidenceFile={setSelectedEvidenceFile}
+            onSelectIdCardFile={setSelectedIdCardFile}
             selectedEvidenceFile={selectedEvidenceFile}
+            selectedIdCardFile={selectedIdCardFile}
             submissionState={submissionState}
             currentUser={authState}
           />
@@ -342,7 +432,7 @@ function HomePage({
 }) {
   return (
     <>
-      <section className="hero-grid">
+      <section className="hero-grid customer-dashboard-grid">
         <div className="hero-copy card spotlight">
           <p className="eyebrow">Real-Time Insurance Experience</p>
           <h2>Screen claim stories, receipts, and behaviour together.</h2>
@@ -440,7 +530,16 @@ function HomePage({
   );
 }
 
-function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, selectedEvidenceFile, submissionState, currentUser }) {
+function CustomerDashboard({
+  claims,
+  onSubmitClaim,
+  onSelectEvidenceFile,
+  onSelectIdCardFile,
+  selectedEvidenceFile,
+  selectedIdCardFile,
+  submissionState,
+  currentUser
+}) {
   const [formValues, setFormValues] = useState({
     claimant_name: currentUser.fullName || "",
     claimant_email: currentUser.email || "",
@@ -466,8 +565,9 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
     receipt_mismatch_flag: false,
     duplicate_receipt_flag: false,
     image_tamper_flag: false,
-    claim_story:
-      "I would like to submit a claim for accidental damage to my laptop after it stopped working following a spill at home. I have attached the receipt and I can provide more details if required."
+    claim_subject: "Claim for accidental damage to laptop",
+    claim_message_body:
+      "Accidental damage occurred after liquid spilled onto the laptop at home. The receipt is attached, and further details can be provided if required."
   });
 
   function updateField(fieldName, fieldValue) {
@@ -487,13 +587,15 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const claimStory = `Subject: ${formValues.claim_subject}\n\nMessage:\n${formValues.claim_message_body}`;
     await onSubmitClaim({
       ...formValues,
       claim_amount_gbp: Number(formValues.claim_amount_gbp),
       estimated_item_value_gbp: Number(formValues.estimated_item_value_gbp),
       prior_claims_count: Number(formValues.prior_claims_count),
       claims_last_12_months: Number(formValues.claims_last_12_months),
-      days_since_policy_start: Number(formValues.days_since_policy_start)
+      days_since_policy_start: Number(formValues.days_since_policy_start),
+      claim_story: claimStory
     });
   }
 
@@ -507,6 +609,16 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
             This dashboard keeps claim status, payout progress, and evidence requirements easy to review.
           </p>
           <p className="evidence-note">Signed in as {currentUser.fullName || currentUser.username}</p>
+          <div className="customer-guide">
+            <p className="section-title">How To Use This Page</p>
+            <ol>
+              <li>Review your saved name and email, then choose the policy and cover level for this claim.</li>
+              <li>Enter the item, incident type, claim amount, and estimated item value as accurately as you can.</li>
+              <li>Write an email subject and message body with dates, what happened, and any useful reference details.</li>
+              <li>Upload your best receipt or invoice, then add a clear image of your ID card before submitting.</li>
+              <li>Use the information icons beside each checkbox if you are unsure whether a detail applies to you.</li>
+            </ol>
+          </div>
         </div>
         <div className="card quick-actions">
           <p className="section-title">Claim Intake</p>
@@ -594,35 +706,43 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
             </div>
 
             <label>
-              Claim Story
-              <textarea value={formValues.claim_story} onChange={(event) => updateField("claim_story", event.target.value)} rows="5" />
+              Email Subject
+              <input
+                value={formValues.claim_subject}
+                onChange={(event) => updateField("claim_subject", event.target.value)}
+                placeholder="Example: Claim for accidental damage to laptop"
+              />
             </label>
 
             <label>
-              Evidence File
+              Message Body
+              <textarea
+                value={formValues.claim_message_body}
+                onChange={(event) => updateField("claim_message_body", event.target.value)}
+                rows="6"
+                placeholder="Please explain what happened, when it happened, and what evidence is attached."
+              />
+            </label>
+
+            <label>
+              Receipt Or Invoice Evidence
               <input
                 type="file"
-                accept=".jpg,.jpeg,.png,.bmp,.pdf"
+                accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff,.pdf"
                 onChange={(event) => onSelectEvidenceFile(event.target.files?.[0] || null)}
+              />
+            </label>
+            <label>
+              Claimant ID Card
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff,.pdf"
+                onChange={(event) => onSelectIdCardFile(event.target.files?.[0] || null)}
               />
             </label>
 
             <div className="checkbox-grid">
-              {[
-                ["recent_high_value_purchase_flag", "Recent high-value purchase"],
-                ["unusual_spend_spike_flag", "Unusual spending spike"],
-                ["account_login_location_change_flag", "Login location changed"],
-                ["multiple_devices_last_7_days_flag", "Multiple devices in 7 days"],
-                ["address_change_last_30_days_flag", "Address changed recently"],
-                ["phone_change_last_30_days_flag", "Phone changed recently"],
-                ["bank_detail_change_last_30_days_flag", "Bank details changed recently"],
-                ["late_night_submission_flag", "Late-night submission"],
-                ["weekend_submission_flag", "Weekend submission"],
-                ["receipt_present_flag", "Receipt present"],
-                ["receipt_mismatch_flag", "Receipt mismatch"],
-                ["duplicate_receipt_flag", "Duplicate receipt"],
-                ["image_tamper_flag", "Image tamper suspected"]
-              ].map(([fieldName, label]) => (
+              {CLAIM_SIGNAL_FIELDS.map(({ fieldName, label, helpText }) => (
                 <label key={fieldName} className="checkbox-row">
                   <input
                     type="checkbox"
@@ -630,6 +750,7 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
                     onChange={(event) => updateField(fieldName, event.target.checked)}
                   />
                   <span>{label}</span>
+                  <InfoHint text={helpText} />
                 </label>
               ))}
             </div>
@@ -638,13 +759,18 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
               {submissionState.status === "submitting" ? "Submitting Claim..." : "Submit New Claim"}
             </button>
             {selectedEvidenceFile ? (
-              <p className="evidence-note">Selected evidence file: {selectedEvidenceFile.name}</p>
+              <p className="evidence-note">Selected receipt or invoice: {selectedEvidenceFile.name}</p>
             ) : (
               <>
-                <p className="evidence-note">Attach a receipt image or PDF evidence file before submission.</p>
-                <p className="evidence-note">Claimant identity is bound to the signed-in policyholder account.</p>
+                <p className="evidence-note">Attach a receipt image, TIFF, or PDF evidence file before submission.</p>
               </>
             )}
+            {selectedIdCardFile ? (
+              <p className="evidence-note">Selected claimant ID card: {selectedIdCardFile.name}</p>
+            ) : (
+              <p className="evidence-note">Attach a clear claimant ID card image or PDF so the claim can be matched to the signed-in policyholder.</p>
+            )}
+            <p className="evidence-note">Claimant identity is bound to the signed-in policyholder account.</p>
             {submissionState.message ? (
               <p className={`form-status ${submissionState.status}`}>{submissionState.message}</p>
             ) : null}
@@ -975,6 +1101,21 @@ function CompanyDashboard({ liveAlerts, metrics, queue }) {
         </div>
       </section>
     </>
+  );
+}
+
+function InfoHint({ text }) {
+  return (
+    <span
+      className="info-hint"
+      data-tooltip={text}
+      title={text}
+      aria-label={text}
+      tabIndex={0}
+      onClick={(event) => event.preventDefault()}
+    >
+      i
+    </span>
   );
 }
 

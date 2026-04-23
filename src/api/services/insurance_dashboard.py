@@ -21,7 +21,7 @@ from src.api.services.insurance_data import append_submitted_claim, load_claim_h
 def build_home_payload() -> HomeResponse:
     dataframe = load_claim_history()
 
-    # I calculate a small headline summary here so the homepage can feel like a real insurance product.
+    # These headline values make the homepage look like a working insurance operations product.
     metrics = {
         "claims_processed_today": int(min(len(dataframe), 128)),
         "live_review_queue": int((dataframe["overall_risk_label"] != "low").sum()),
@@ -102,8 +102,12 @@ def build_live_alert_event(event_index: int) -> AlertItem:
     )
 
 
-def create_submitted_claim(claim_request: ClaimSubmissionRequest, evidence_summary: dict | None = None) -> ClaimSubmissionResponse:
-    # I persist the new claim first so every dashboard read after this sees the same saved record.
+def create_submitted_claim(
+    claim_request: ClaimSubmissionRequest,
+    evidence_summary: dict | None = None,
+    id_card_summary: dict | None = None,
+) -> ClaimSubmissionResponse:
+    # Save the claim before building response objects so both dashboards read the same record.
     claim_record = append_submitted_claim(claim_request, evidence_summary=evidence_summary)
     customer_claim = _build_customer_claim_from_record(claim_record)
     queue_item = _build_queue_item_from_record(claim_record)
@@ -125,6 +129,7 @@ def create_submitted_claim(claim_request: ClaimSubmissionRequest, evidence_summa
             "cv_signal_summary": claim_record.get("cv_signal_summary", ""),
             "document_risk_score": claim_record.get("document_risk_score", 0.0),
             "document_reasons": _build_document_reasons(_record_accessor(claim_record)),
+            "id_card_summary": _build_id_card_summary(id_card_summary),
         },
     )
 
@@ -133,15 +138,15 @@ def _build_public_features() -> list[PublicFeature]:
     return [
         PublicFeature(
             title="Faster Claim Intake",
-            text="I guide policyholders through structured claim submission with evidence upload and instant progress feedback.",
+            text="Policyholders receive a structured claim submission flow with evidence upload and instant progress feedback.",
         ),
         PublicFeature(
             title="Multimodal Fraud Screening",
-            text="I combine claim language, document evidence, and behavioural history into one risk recommendation.",
+            text="Claim language, document evidence, and behavioural history are combined into one risk recommendation.",
         ),
         PublicFeature(
             title="Live Operations View",
-            text="I give fraud teams a queue, alert feed, and cross-signal case context from one insurance dashboard.",
+            text="Fraud teams receive a queue, alert feed, and cross-signal case context from one insurance dashboard.",
         ),
     ]
 
@@ -150,35 +155,35 @@ def _build_behavioural_fields() -> list[FeatureCard]:
     return [
         FeatureCard(
             name="Prior Claims Count",
-            description="I use this to understand whether the claimant has a repeat-claiming pattern.",
+            description="Shows whether the claimant has a repeat-claiming pattern.",
         ),
         FeatureCard(
             name="Days Since Policy Start",
-            description="I use this to identify claims that arrive very soon after policy activation.",
+            description="Highlights claims submitted very soon after policy activation.",
         ),
         FeatureCard(
             name="Days Since Last Claim",
-            description="I use this to spot compressed claim timing across multiple submissions.",
+            description="Shows compressed claim timing across multiple submissions.",
         ),
         FeatureCard(
             name="High Value Purchase Flag",
-            description="I use this to mark recent unusual purchases that raise behavioural risk.",
+            description="Marks recent high-value purchases that may need supporting evidence.",
         ),
         FeatureCard(
             name="Spend Spike Flag",
-            description="I use this to show when spending behaviour recently moved outside the norm.",
+            description="Shows when recent spending moved outside the usual pattern.",
         ),
         FeatureCard(
             name="Account Location Change",
-            description="I use this to flag sudden login geography changes before a claim.",
+            description="Highlights recent login geography changes before a claim.",
         ),
         FeatureCard(
             name="Multiple Devices in 7 Days",
-            description="I use this to detect unusual account access patterns across devices.",
+            description="Shows recent account access across several devices.",
         ),
         FeatureCard(
             name="Bank Detail Change",
-            description="I use this to highlight payout-risk changes close to the claim date.",
+            description="Highlights payout-detail changes close to the claim date.",
         ),
     ]
 
@@ -189,10 +194,10 @@ def _build_claim_email_samples() -> dict[str, ClaimEmailSample]:
             subject="Claim for accidental damage to laptop",
             body=(
                 "Dear Claims Team,\n\n"
-                "I would like to submit a claim for accidental damage to my laptop under my gadget insurance policy. "
-                "On 14 March 2025, I accidentally knocked a glass of water over my desk while working from home. "
-                "The water spilled onto my laptop and the device stopped functioning shortly afterwards. "
-                "I have attached the original purchase receipt and the repair assessment from a local technician.\n\n"
+                "This message submits a claim for accidental damage to a laptop under the gadget insurance policy. "
+                "On 14 March 2025, a glass of water was accidentally knocked over while working from home. "
+                "The water spilled onto the laptop and the device stopped functioning shortly afterwards. "
+                "The original purchase receipt and repair assessment from a local technician are attached.\n\n"
                 "Kind regards,\nDaniel Morgan"
             ),
         ),
@@ -200,10 +205,10 @@ def _build_claim_email_samples() -> dict[str, ClaimEmailSample]:
             subject="Urgent claim request for stolen premium laptop",
             body=(
                 "Dear Insurance,\n\n"
-                "I need to make an urgent claim for my very expensive laptop which was stolen yesterday evening. "
-                "It was worth around GBP 2,400 and I need the full payout quickly. I do not remember the exact time "
-                "or location because everything happened very fast, but I have attached a receipt. "
-                "I also need the payment sent to my updated bank account.\n\n"
+                "This is an urgent claim request for a very expensive laptop that was stolen yesterday evening. "
+                "It was worth around GBP 2,400 and the full payout is needed quickly. The exact time "
+                "or location is unclear because everything happened very fast, but a receipt is attached. "
+                "The payment should be sent to the updated bank account.\n\n"
                 "Regards,\nDaniel"
             ),
         ),
@@ -274,14 +279,14 @@ def _build_alert_reason(row) -> str:
     if int(getattr(row, "image_tamper_flag", 0)) == 1:
         reasons.append("Possible edited image detected from the uploaded receipt checks.")
     if int(row.bank_detail_change_last_30_days_flag) == 1:
-        reasons.append("I detected a recent payout-detail change before submission.")
+        reasons.append("A recent payout-detail change was detected before submission.")
     if int(row.account_login_location_change_flag) == 1:
-        reasons.append("I detected a sudden login-location change before the claim.")
+        reasons.append("A sudden login-location change was detected before the claim.")
     if int(row.late_night_submission_flag) == 1:
-        reasons.append("I saw the claim arrive at an unusual submission time.")
+        reasons.append("The claim arrived at an unusual submission time.")
 
     if not reasons:
-        reasons.append("I found a consistent claim story, behaviour pattern, and document profile.")
+        reasons.append("The claim story, behaviour pattern, and document profile are consistent.")
 
     return " ".join(reasons[:2])
 
@@ -298,10 +303,28 @@ def _build_document_reasons(row) -> list[str]:
         reasons.append("Possible edited image detected from the uploaded receipt checks.")
 
     cv_signal_summary = str(getattr(row, "cv_signal_summary", "")).strip()
-    if cv_signal_summary and cv_signal_summary != "I did not receive an evidence file for this claim.":
+    if cv_signal_summary and cv_signal_summary != "No evidence file was uploaded for this claim.":
         reasons.append(cv_signal_summary)
 
     return reasons or ["Receipt file uploaded and passed the available document checks."]
+
+
+def _build_id_card_summary(id_card_summary: dict | None) -> dict:
+    if not id_card_summary or not id_card_summary.get("evidence_name"):
+        return {
+            "evidence_name": "",
+            "evidence_storage_path": "",
+            "status": "Missing",
+            "summary": "No claimant ID card was uploaded with this claim.",
+        }
+
+    return {
+        "evidence_name": id_card_summary.get("evidence_name", ""),
+        "evidence_storage_path": id_card_summary.get("evidence_storage_path", ""),
+        "status": id_card_summary.get("evidence_status", "Uploaded"),
+        "summary": id_card_summary.get("cv_signal_summary", ""),
+        "reasons": id_card_summary.get("analysis_reasons", []),
+    }
 
 
 def _format_submitted_at(timestamp_value) -> str:
@@ -335,12 +358,12 @@ def _map_customer_status(outcome: str) -> str:
 
 def _build_next_step(outcome: str, risk_label: str) -> str:
     if outcome == "approved":
-        return "I am preparing the payout."
+        return "The payout is being prepared."
     if outcome == "rejected":
-        return "I have escalated this claim to the fraud investigation team."
+        return "This claim has been escalated to the fraud investigation team."
     if risk_label == "high":
-        return "I am verifying the uploaded evidence and account changes."
-    return "I have queued the claim for routine checks."
+        return "The uploaded evidence and account changes are being verified."
+    return "The claim has been queued for routine checks."
 
 
 def _map_company_risk(risk_label: str) -> str:

@@ -82,7 +82,7 @@ NLP_STAT_FEATURE_COLUMNS = [
 
 @lru_cache(maxsize=1)
 def load_claim_history() -> pd.DataFrame:
-    # I merge the static insurance sample with newly submitted claims so the dashboards stay current.
+    # Combine the prepared sample data with new portal submissions so dashboards stay current.
     base_dataframe = pd.read_csv(settings.CLAIMS_DATA_PATH)
     submitted_dataframe = fetch_submitted_claims_dataframe()
     dataframe = pd.concat([base_dataframe, submitted_dataframe], ignore_index=True, sort=False)
@@ -98,7 +98,7 @@ def append_submitted_claim(claim_request: ClaimSubmissionRequest, evidence_summa
 
         insert_submitted_claim(claim_record)
 
-        # I clear the cache after every write so later API reads include the new claim.
+        # Clear the cached dataframe after saving, otherwise dashboards may not show the latest claim.
         load_claim_history.cache_clear()
         return claim_record
 
@@ -287,7 +287,7 @@ def _score_email_risk_with_model(claim_story: str) -> float | None:
     mnb_probability = float(assets["mnb_model"].predict_proba(selected_matrix)[0, 1])
     rf_probability = float(assets["rf_model"].predict_proba(selected_matrix)[0, 1])
 
-    # I lean toward Naive Bayes because it separates ham/spam language more cleanly on this text-only task.
+    # Naive Bayes receives the larger weight because it performs strongly on short text classification.
     blended_probability = (mnb_probability * 0.75) + (rf_probability * 0.25)
     calibrated_risk = 0.5 + ((blended_probability - 0.5) * 1.2)
     return round(min(max(calibrated_risk, 0.02), 0.98), 2)

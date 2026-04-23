@@ -13,7 +13,7 @@ export const behaviouralFieldCards = [
 ];
 
 export const claimEmailSamples = {
-  genuine: { subject: "Medical Claim Submission - Policy #12345", from: "patient@example.com", body: "Dear Insurance Company,\n\nI am submitting a claim for medical expenses incurred on March 15, 2024. Please find attached the necessary documentation including medical bills, doctor's notes, and receipts.\n\nThank you for your prompt attention.\n\nBest regards,\nJohn Doe", risk_score: 15, analysis: "Standard medical claim with proper documentation" },
+  genuine: { subject: "Medical Claim Submission - Policy #12345", from: "patient@example.com", body: "Dear Insurance Company,\n\nThis message submits a claim for medical expenses incurred on March 15, 2024. The attached documents include medical bills, doctor's notes, and receipts.\n\nThank you for your prompt attention.\n\nBest regards,\nJohn Doe", risk_score: 15, analysis: "Standard medical claim with proper documentation" },
   suspicious: { subject: "URGENT: Claim for Accident - Need Immediate Processing", from: "claimant@urgent-mail.com", body: "HELLO INSURANCE!!!\n\nI HAD A CAR ACCIDENT LAST WEEK. NEED MONEY FAST. ALL PAPERS ATTACHED. PLEASE APPROVE QUICKLY!!!\n\nTHANKS,\nJANE SMITH", risk_score: 85, analysis: "High-pressure language, urgent requests, and inconsistent formatting suggest potential fraud" }
 };
 

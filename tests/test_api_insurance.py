@@ -1,7 +1,9 @@
 import base64
+from io import BytesIO
 
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from src.api.auth import hash_password
 from src.api.config import settings
@@ -289,6 +291,9 @@ def test_claim_submission_with_evidence_uploads_file_and_scores_document_risk():
     sample_png = base64.b64decode(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn7h0wAAAAASUVORK5CYII="
     )
+    id_card_buffer = BytesIO()
+    Image.new("RGB", (640, 400), color="white").save(id_card_buffer, format="PNG")
+    id_card_buffer.seek(0)
 
     response = client.post(
         "/api/insurance/claims/with-evidence",
@@ -320,7 +325,10 @@ def test_claim_submission_with_evidence_uploads_file_and_scores_document_risk():
             "image_tamper_flag": "false",
             "claim_story": "I am submitting a tablet damage claim with the supporting receipt image attached for review.",
         },
-        files={"evidence_file": ("receipt.png", sample_png, "image/png")},
+        files={
+            "evidence_file": ("receipt.png", sample_png, "image/png"),
+            "id_card_file": ("claimant-id.png", id_card_buffer.getvalue(), "image/png"),
+        },
     )
 
     assert response.status_code == 201
@@ -330,7 +338,57 @@ def test_claim_submission_with_evidence_uploads_file_and_scores_document_risk():
     assert payload["evidence_summary"]["evidence_storage_path"]
     assert payload["evidence_summary"]["document_risk_score"] > 0
     assert any("Possible edited image" in reason for reason in payload["evidence_summary"]["document_reasons"])
+    assert payload["evidence_summary"]["id_card_summary"]["evidence_name"] == "claimant-id.png"
+    assert payload["evidence_summary"]["id_card_summary"]["status"] == "Uploaded"
     assert payload["queue_item"]["claimant"] == "Demo Policyholder"
+
+
+def test_claim_submission_accepts_tiff_evidence_upload():
+    user_login = login_as("demo_user", "UserPass123!")
+    image_buffer = BytesIO()
+    Image.new("RGB", (360, 480), color="white").save(image_buffer, format="TIFF")
+    image_buffer.seek(0)
+
+    response = client.post(
+        "/api/insurance/claims/with-evidence",
+        headers={"Authorization": f"Bearer {user_login['access_token']}"},
+        data={
+            "claimant_name": "Theo Grant",
+            "claimant_email": "theo@example.com",
+            "policy_type": "gadget",
+            "coverage_tier": "standard",
+            "item_category": "camera",
+            "incident_type": "accidental_damage",
+            "claim_amount_gbp": "520",
+            "estimated_item_value_gbp": "499",
+            "prior_claims_count": "0",
+            "claims_last_12_months": "0",
+            "days_since_policy_start": "120",
+            "recent_high_value_purchase_flag": "false",
+            "unusual_spend_spike_flag": "false",
+            "account_login_location_change_flag": "false",
+            "multiple_devices_last_7_days_flag": "false",
+            "address_change_last_30_days_flag": "false",
+            "phone_change_last_30_days_flag": "false",
+            "bank_detail_change_last_30_days_flag": "false",
+            "late_night_submission_flag": "false",
+            "weekend_submission_flag": "false",
+            "receipt_present_flag": "true",
+            "receipt_mismatch_flag": "false",
+            "duplicate_receipt_flag": "false",
+            "image_tamper_flag": "false",
+            "claim_story": "I am submitting a camera damage claim with a TIFF receipt image attached for review.",
+        },
+        files={"evidence_file": ("receipt.tiff", image_buffer.getvalue(), "image/tiff")},
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+
+    assert payload["evidence_summary"]["evidence_name"] == "receipt.tiff"
+    assert payload["evidence_summary"]["document_risk_score"] > 0
+    assert payload["evidence_summary"]["evidence_storage_path"].endswith(".tiff")
+    assert "The uploaded image was inspected" in payload["evidence_summary"]["cv_signal_summary"]
 
 
 def test_email_risk_scoring_creates_clearer_gap_between_genuine_and_suspicious_claims():
