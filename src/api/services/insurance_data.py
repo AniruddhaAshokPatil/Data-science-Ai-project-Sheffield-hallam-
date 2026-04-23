@@ -79,6 +79,41 @@ NLP_STAT_FEATURE_COLUMNS = [
     "phishing_keyword_count",
 ]
 
+TOTAL_RISK_WEIGHTS = {
+    "email": 0.30,
+    "behaviour": 0.42,
+    "document": 0.28,
+}
+HIGH_RISK_THRESHOLD = 0.65
+REVIEW_RISK_THRESHOLD = 0.32
+
+BEHAVIOURAL_BASE_RISK = 0.12
+BEHAVIOURAL_RISK_CAP = 0.98
+BEHAVIOURAL_FLAG_WEIGHTS = {
+    "recent_high_value_purchase_flag": 0.12,
+    "unusual_spend_spike_flag": 0.13,
+    "account_login_location_change_flag": 0.11,
+    "multiple_devices_last_7_days_flag": 0.10,
+    "address_change_last_30_days_flag": 0.09,
+    "phone_change_last_30_days_flag": 0.08,
+    "bank_detail_change_last_30_days_flag": 0.16,
+    "late_night_submission_flag": 0.06,
+    "weekend_submission_flag": 0.04,
+}
+PRIOR_CLAIM_WEIGHT = 0.10
+PRIOR_CLAIM_CAP = 0.30
+RECENT_CLAIM_WEIGHT = 0.12
+RECENT_CLAIM_CAP = 0.36
+NEW_POLICY_RISK_WEIGHT = 0.24
+HIGH_CLAIM_RATIO_RISK_WEIGHT = 0.22
+
+RECEIPT_PRESENT_BASE_RISK = 0.10
+RECEIPT_MISSING_BASE_RISK = 0.38
+RECEIPT_MISMATCH_RISK_WEIGHT = 0.36
+DUPLICATE_RECEIPT_RISK_WEIGHT = 0.34
+IMAGE_TAMPER_RISK_WEIGHT = 0.38
+DOCUMENT_RISK_CAP = 0.98
+
 
 @lru_cache(maxsize=1)
 def load_claim_history() -> pd.DataFrame:
@@ -158,17 +193,27 @@ def _build_claim_record(claim_request: ClaimSubmissionRequest, claim_id: str, ev
     behavioural_risk = _score_behaviour_risk(claim_request, claim_amount_ratio)
     document_risk = _score_document_risk(
         claim_request=claim_request,
-        evidence_risk_score=float(evidence_summary.get("document_risk_score", 0.08 if receipt_present_flag else 0.28)),
+        evidence_risk_score=float(
+            evidence_summary.get(
+                "document_risk_score",
+                RECEIPT_PRESENT_BASE_RISK if receipt_present_flag else RECEIPT_MISSING_BASE_RISK,
+            )
+        ),
         duplicate_receipt_flag=duplicate_receipt_flag,
         image_tamper_flag=image_tamper_flag,
         receipt_present_flag=receipt_present_flag,
     )
-    total_risk = round((email_risk * 0.35) + (behavioural_risk * 0.4) + (document_risk * 0.25), 2)
+    total_risk = round(
+        (email_risk * TOTAL_RISK_WEIGHTS["email"])
+        + (behavioural_risk * TOTAL_RISK_WEIGHTS["behaviour"])
+        + (document_risk * TOTAL_RISK_WEIGHTS["document"]),
+        2,
+    )
 
-    if total_risk >= 0.7:
+    if total_risk >= HIGH_RISK_THRESHOLD:
         overall_risk_label = "high"
         manual_review_outcome = "flagged"
-    elif total_risk >= 0.4:
+    elif total_risk >= REVIEW_RISK_THRESHOLD:
         overall_risk_label = "medium"
         manual_review_outcome = "flagged"
     else:
@@ -395,27 +440,17 @@ def _score_email_risk_with_heuristics(claim_story: str) -> float:
 
 
 def _score_behaviour_risk(claim_request: ClaimSubmissionRequest, claim_amount_ratio: float) -> float:
-    risk = 0.1
-    risk += min(claim_request.prior_claims_count * 0.08, 0.24)
-    risk += min(claim_request.claims_last_12_months * 0.07, 0.21)
+    risk = BEHAVIOURAL_BASE_RISK
+    risk += min(claim_request.prior_claims_count * PRIOR_CLAIM_WEIGHT, PRIOR_CLAIM_CAP)
+    risk += min(claim_request.claims_last_12_months * RECENT_CLAIM_WEIGHT, RECENT_CLAIM_CAP)
     if claim_request.days_since_policy_start <= 30:
-        risk += 0.18
+        risk += NEW_POLICY_RISK_WEIGHT
     if claim_amount_ratio >= 1.3:
-        risk += 0.14
-    for flag in [
-        claim_request.recent_high_value_purchase_flag,
-        claim_request.unusual_spend_spike_flag,
-        claim_request.account_login_location_change_flag,
-        claim_request.multiple_devices_last_7_days_flag,
-        claim_request.address_change_last_30_days_flag,
-        claim_request.phone_change_last_30_days_flag,
-        claim_request.bank_detail_change_last_30_days_flag,
-        claim_request.late_night_submission_flag,
-        claim_request.weekend_submission_flag,
-    ]:
-        if flag:
-            risk += 0.06
-    return round(min(risk, 0.96), 2)
+        risk += HIGH_CLAIM_RATIO_RISK_WEIGHT
+    for field_name, weight in BEHAVIOURAL_FLAG_WEIGHTS.items():
+        if getattr(claim_request, field_name):
+            risk += weight
+    return round(min(risk, BEHAVIOURAL_RISK_CAP), 2)
 
 
 def _score_document_risk(
@@ -426,11 +461,11 @@ def _score_document_risk(
     image_tamper_flag: int,
     receipt_present_flag: int,
 ) -> float:
-    risk = evidence_risk_score if receipt_present_flag else 0.28
+    risk = evidence_risk_score if receipt_present_flag else RECEIPT_MISSING_BASE_RISK
     if claim_request.receipt_mismatch_flag:
-        risk += 0.28
+        risk += RECEIPT_MISMATCH_RISK_WEIGHT
     if duplicate_receipt_flag:
-        risk += 0.24
+        risk += DUPLICATE_RECEIPT_RISK_WEIGHT
     if image_tamper_flag:
-        risk += 0.26
-    return round(min(risk, 0.95), 2)
+        risk += IMAGE_TAMPER_RISK_WEIGHT
+    return round(min(risk, DOCUMENT_RISK_CAP), 2)

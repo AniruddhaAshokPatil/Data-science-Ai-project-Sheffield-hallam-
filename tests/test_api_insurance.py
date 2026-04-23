@@ -8,8 +8,9 @@ from PIL import Image
 from src.api.auth import hash_password
 from src.api.config import settings
 from src.api.db import init_database, upsert_user_with_email
-from src.api.services.insurance_data import _score_email_risk
+from src.api.schemas import ClaimSubmissionRequest
 from src.api.services.insurance_data import load_claim_history
+from src.api.services.insurance_data import _score_behaviour_risk, _score_document_risk, _score_email_risk
 from src.api.main import app
 
 
@@ -409,6 +410,80 @@ def test_email_risk_scoring_creates_clearer_gap_between_genuine_and_suspicious_c
     assert genuine_risk <= 0.2
     assert suspicious_risk >= 0.75
     assert suspicious_risk - genuine_risk >= 0.55
+
+
+def _build_scoring_request(**overrides) -> ClaimSubmissionRequest:
+    payload = {
+        "claimant_name": "Risk Test",
+        "claimant_email": "risk@example.com",
+        "policy_type": "gadget",
+        "coverage_tier": "premium",
+        "item_category": "laptop",
+        "incident_type": "theft",
+        "claim_amount_gbp": 900,
+        "estimated_item_value_gbp": 900,
+        "prior_claims_count": 0,
+        "claims_last_12_months": 0,
+        "days_since_policy_start": 180,
+        "claim_story": "This is a scoring test claim with enough detail for validation.",
+    }
+    payload.update(overrides)
+    return ClaimSubmissionRequest(**payload)
+
+
+def test_behavioural_risk_uses_heavier_non_uniform_signal_weights():
+    base_risk = _score_behaviour_risk(_build_scoring_request(), claim_amount_ratio=1.0)
+    weekend_risk = _score_behaviour_risk(
+        _build_scoring_request(weekend_submission_flag=True),
+        claim_amount_ratio=1.0,
+    )
+    spend_spike_risk = _score_behaviour_risk(
+        _build_scoring_request(unusual_spend_spike_flag=True),
+        claim_amount_ratio=1.0,
+    )
+    bank_change_risk = _score_behaviour_risk(
+        _build_scoring_request(bank_detail_change_last_30_days_flag=True),
+        claim_amount_ratio=1.0,
+    )
+    capped_risk = _score_behaviour_risk(
+        _build_scoring_request(
+            prior_claims_count=4,
+            claims_last_12_months=4,
+            days_since_policy_start=14,
+            bank_detail_change_last_30_days_flag=True,
+        ),
+        claim_amount_ratio=1.3,
+    )
+
+    assert base_risk == 0.12
+    assert weekend_risk == 0.16
+    assert spend_spike_risk == 0.25
+    assert bank_change_risk == 0.28
+    assert bank_change_risk > spend_spike_risk > weekend_risk > base_risk
+    assert capped_risk == 0.98
+
+
+def test_document_risk_uses_heavier_receipt_and_tamper_weights():
+    clean_request = _build_scoring_request()
+    mismatch_request = _build_scoring_request(receipt_mismatch_flag=True)
+
+    missing_receipt_risk = _score_document_risk(
+        claim_request=clean_request,
+        evidence_risk_score=0.10,
+        duplicate_receipt_flag=0,
+        image_tamper_flag=0,
+        receipt_present_flag=0,
+    )
+    capped_document_risk = _score_document_risk(
+        claim_request=mismatch_request,
+        evidence_risk_score=0.10,
+        duplicate_receipt_flag=1,
+        image_tamper_flag=1,
+        receipt_present_flag=1,
+    )
+
+    assert missing_receipt_risk == 0.38
+    assert capped_document_risk == 0.98
 
 
 def test_claim_submission_with_evidence_returns_explicit_receipt_reasons():

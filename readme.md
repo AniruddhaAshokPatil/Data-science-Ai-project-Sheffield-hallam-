@@ -287,6 +287,8 @@ python3 scripts/validate_project.py
 
 A consolidated evaluation notebook for the current ShieldWise submission is available at [backend/ShieldWise_Evaluation_Workflow.ipynb](backend/ShieldWise_Evaluation_Workflow.ipynb). I use it to bring together the retained NLP metrics, receipt-model metrics, and the final submission explanation in one place.
 
+The current risk-score weights are documented in [docs/RISK_SCORING_METHODOLOGY.md](docs/RISK_SCORING_METHODOLOGY.md). This file explains the exact email, behavioural, document, and uploaded-evidence values used by the running API.
+
 ---
 
 ## **Design Decisions (Why This Approach)**
