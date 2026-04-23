@@ -283,6 +283,10 @@ Validate project health:
 python3 scripts/validate_project.py
 ```
 
+## Evaluation Workflow
+
+A consolidated evaluation notebook for the current ShieldWise submission is available at [backend/ShieldWise_Evaluation_Workflow.ipynb](backend/ShieldWise_Evaluation_Workflow.ipynb). It brings together the retained NLP metrics, receipt-model metrics, and the final submission narrative in one report-friendly workflow.
+
 ---
 
 ## **Design Decisions (Why This Approach)**
