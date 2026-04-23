@@ -1,14 +1,14 @@
 # **ShieldWise - Insurance Claim Fraud Detection Platform**
 
-ShieldWise is a practical fraud detection system built around a real insurance workflow. It focuses on how claims are submitted, reviewed, and flagged in a live environment rather than just training models in isolation.
+ShieldWise is my insurance claim fraud detection project. I built it to show how fraud detection can work as a full application, not only as separate model notebooks.
 
-The project combines a backend API, a frontend dashboard, and supporting data pipelines into a single working system.
+The project brings together a FastAPI backend, a React dashboard, supporting model work, and insurance claim data so the whole workflow can be tested from claim submission through to investigator review.
 
 ---
 
 ## **What ShieldWise Does**
 
-ShieldWise simulates how an insurer would handle incoming claims and identify risk early.
+ShieldWise simulates how an insurer could receive claims, check the evidence, and highlight claims that may need closer review.
 
 At a high level, it:
 
@@ -20,7 +20,7 @@ At a high level, it:
 * Streams live alerts to investigators
 * Displays results in both customer and investigator dashboards
 
-This is not just a model project — it is an **end-to-end workflow system**.
+The main point of the project is the full workflow: data, models, API, interface, and alerts working together.
 
 ---
 
@@ -62,7 +62,7 @@ Provides:
 
 ## **How Risk Scoring Works**
 
-ShieldWise combines multiple signals rather than relying on a single model.
+ShieldWise combines several signals instead of depending on one score or one model.
 
 Conceptually:
 
@@ -127,7 +127,7 @@ Used for:
 Important note:
 
 * This dataset is **synthetically generated**
-* It is used for prototyping, not as a real-world benchmark
+* I use it for prototyping and explanation, not as proof of real insurer-level performance
 
 ---
 
@@ -186,7 +186,7 @@ Not all data in this project reflects real-world distributions.
 * Receipt dataset → small sample (200 images)
 * CV models → supporting, not production-scale
 
-This is intentional. The focus is on **system design and integration**, not dataset scale.
+This is intentional. My focus is on **system design and integration**, while being honest about the limits of the available datasets.
 
 ---
 
@@ -285,16 +285,16 @@ python3 scripts/validate_project.py
 
 ## Evaluation Workflow
 
-A consolidated evaluation notebook for the current ShieldWise submission is available at [backend/ShieldWise_Evaluation_Workflow.ipynb](backend/ShieldWise_Evaluation_Workflow.ipynb). It brings together the retained NLP metrics, receipt-model metrics, and the final submission narrative in one report-friendly workflow.
+A consolidated evaluation notebook for the current ShieldWise submission is available at [backend/ShieldWise_Evaluation_Workflow.ipynb](backend/ShieldWise_Evaluation_Workflow.ipynb). I use it to bring together the retained NLP metrics, receipt-model metrics, and the final submission explanation in one place.
 
 ---
 
 ## **Design Decisions (Why This Approach)**
 
-* Focus on **real workflow first**, models second
-* Keep document checks lightweight to avoid latency issues
-* Use WebSockets to simulate operational alert systems
-* Separate backend and frontend clearly for scalability
+* I focused on the **real insurance workflow first**, then connected the model work around it
+* I kept the live document checks lightweight so the app remains quick during a demo
+* I used WebSockets to show how investigators can receive live alerts
+* I separated the backend and frontend so the project is easier to understand and extend
 
 ---
 
@@ -315,4 +315,4 @@ It connects:
 
 * data → models → API → user interface → alerts
 
-That integration is the core of the project.
+That integration is the main contribution of the project.

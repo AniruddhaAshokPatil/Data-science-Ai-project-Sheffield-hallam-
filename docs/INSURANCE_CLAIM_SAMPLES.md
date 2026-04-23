@@ -1,7 +1,7 @@
 # Insurance Claim Samples
 
 This file keeps a few realistic examples of insurance claim inputs in one place.
-These samples support UI testing, product demonstrations, and clear explanation of the fraud-screening logic.
+I use these samples for UI testing, product demonstrations, and clear explanation of the fraud-screening logic.
 
 ## Suggested Behavioural Or Claim-History Fields
 
@@ -73,4 +73,4 @@ Daniel
 ## How These Samples Are Used In The App
 
 The email text is passed into the NLP model, the receipt image is used by the evidence workflow, and the claim-history fields are combined in the behavioural risk scorer.
-The app then presents one final recommendation such as `Low Risk`, `Review Needed`, or `High Risk`.
+The app then presents one final recommendation such as `Low Risk`, `Review Needed`, or `High Risk`, which keeps the result easy for a user or investigator to understand.

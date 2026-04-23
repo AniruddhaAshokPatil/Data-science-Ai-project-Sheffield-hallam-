@@ -2,11 +2,11 @@
 
 Audit date: 2026-04-21
 
-This note records what is actually tracked in the repository after cleanup. It is the ground truth for the submission narrative so the README, issue notes, and codebase all describe the same project.
+This note records what is actually tracked in the repository after cleanup. I am using it as the ground truth for the submission narrative so the README, issue notes, and codebase all describe the same project.
 
 ## Current Project Shape
 
-The repository now centers on one tracked product: `ShieldWise`, the insurance claim fraud platform.
+The repository now centres on one tracked product: `ShieldWise`, the insurance claim fraud platform.
 
 The active submission consists of:
 
@@ -38,7 +38,7 @@ The following legacy materials were removed because they were not part of the cu
 - transaction-only datasets in `data/raw/transactions/`
 - transaction-only training script and saved model artifacts
 
-They were removed because they duplicated older planning or draft material without contributing to the current runnable submission.
+I removed them because they duplicated older planning or draft material without contributing to the current runnable submission.
 
 ## Current Execution Story
 

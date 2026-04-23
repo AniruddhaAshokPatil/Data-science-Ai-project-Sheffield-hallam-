@@ -2,7 +2,7 @@
 
 Audit date: 2026-04-22
 
-This document regenerates Issues `1` to `30` so they match the current repository implementation only.
+This document rewrites Issues `1` to `30` so they match the current repository implementation only.
 
 The tracked project is `ShieldWise`, an insurance claim fraud detection platform with:
 
@@ -36,7 +36,7 @@ Each issue below uses the same structure:
 - `data/raw/insurance_claims/claim_history_detailed.csv`
 - `data/raw/insurance_claims/submitted_claims.csv`
 
-These support the insurance dashboards, claim history, and backend workflow.
+These support the insurance dashboards, claim history, and backend workflow used in the current submission.
 
 ### NLP Data
 
