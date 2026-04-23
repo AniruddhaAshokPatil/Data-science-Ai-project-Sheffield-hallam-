@@ -1,7 +1,7 @@
 fastapi>=0.115,<1.0
 uvicorn>=0.30,<1.0
 python-multipart>=0.0.9,<1.0
-tensorflow==2.19.0
+# tensorflow>=2.15
 keras>=3.0,<4
 numpy>=1.26,<2.0
 pandas>=2.2
