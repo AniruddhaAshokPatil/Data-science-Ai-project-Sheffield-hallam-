@@ -199,6 +199,7 @@ def test_company_dashboard_endpoint_returns_queue():
     assert "queue" in payload
     assert len(payload["queue"]) >= 1
     assert payload["queue"][0]["claim_id"].startswith("CLM-")
+    assert payload["queue"][0]["submitted_at"]
 
 
 def test_alerts_websocket_stream_returns_events():

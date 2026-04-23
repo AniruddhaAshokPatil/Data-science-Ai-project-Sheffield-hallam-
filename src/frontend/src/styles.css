@@ -446,6 +446,50 @@ td {
   margin-bottom: 0.9rem;
 }
 
+.queue-time {
+  margin: -0.35rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.dashboard-toolbar,
+.filter-kpis,
+.workspace-grid {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.dashboard-toolbar {
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+}
+
+.toolbar-field {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.toolbar-field input,
+.toolbar-field select {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  padding: 0.85rem 0.95rem;
+}
+
+.filter-snapshot,
+.case-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.filter-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .risk-bars {
   display: grid;
   gap: 0.7rem;
@@ -464,6 +508,83 @@ td {
   background: linear-gradient(90deg, var(--accent-deep), var(--accent));
 }
 
+.queue-card {
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.queue-card[role="button"] {
+  cursor: pointer;
+}
+
+.queue-card.selected {
+  border-color: rgba(196, 230, 107, 0.35);
+  background: linear-gradient(180deg, rgba(24, 45, 74, 0.98), rgba(11, 27, 47, 0.98));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.queue-empty {
+  text-align: left;
+}
+
+.workspace-headline {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.workspace-headline h3 {
+  margin: 0 0 0.25rem;
+}
+
+.workspace-headline p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.workspace-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workspace-panel {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.workspace-panel span {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.workspace-panel strong {
+  font-size: 1.15rem;
+}
+
+.workspace-notes {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.workspace-notes p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.compact-alerts .alert-card h3 {
+  font-size: 1rem;
+}
+
 @media (max-width: 1100px) {
   .hero-grid,
   .content-grid,
@@ -471,7 +592,10 @@ td {
   .feature-grid,
   .signal-grid,
   .form-grid,
-  .checkbox-grid {
+  .checkbox-grid,
+  .dashboard-toolbar,
+  .filter-kpis,
+  .workspace-grid {
     grid-template-columns: 1fr;
   }
 

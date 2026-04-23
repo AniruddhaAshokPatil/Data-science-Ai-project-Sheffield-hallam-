@@ -31,6 +31,7 @@ class QueueItem(BaseModel):
     claimant: str
     policy_type: str
     amount: str
+    submitted_at: str = ""
     nlp_risk: float
     document_risk: float
     behavioural_risk: float

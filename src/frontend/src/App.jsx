@@ -688,6 +688,77 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
 }
 
 function CompanyDashboard({ liveAlerts, metrics, queue }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [riskFilter, setRiskFilter] = useState("all");
+  const [policyFilter, setPolicyFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
+  const [selectedClaimId, setSelectedClaimId] = useState("");
+
+  const normalizedQueue = queue.map((item) => {
+    const claimId = item.claim_id ?? item.claimId;
+    const policyType = item.policy_type ?? item.policyType;
+    const combinedRisk = item.combined_risk ?? item.combinedRisk;
+    const nlpRisk = item.nlp_risk ?? item.nlpRisk;
+    const documentRisk = item.document_risk ?? item.documentRisk;
+    const behaviouralRisk = item.behavioural_risk ?? item.behaviouralRisk;
+    const alertReason = item.alert_reason ?? item.alertReason;
+    const submittedAt = item.submitted_at ?? item.submittedAt ?? "";
+    return {
+      ...item,
+      claimId,
+      policyType,
+      combinedRisk,
+      nlpRisk,
+      documentRisk,
+      behaviouralRisk,
+      alertReason,
+      submittedAt
+    };
+  });
+
+  const availablePolicies = Array.from(new Set(normalizedQueue.map((item) => item.policyType))).sort();
+  const availableMonths = Array.from(
+    new Set(
+      normalizedQueue
+        .map((item) => item.submittedAt.slice(3, 11))
+        .filter(Boolean)
+    )
+  );
+
+  const filteredQueue = normalizedQueue.filter((item) => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !normalizedSearch ||
+      item.claimId.toLowerCase().includes(normalizedSearch) ||
+      item.claimant.toLowerCase().includes(normalizedSearch) ||
+      item.policyType.toLowerCase().includes(normalizedSearch) ||
+      item.alertReason.toLowerCase().includes(normalizedSearch);
+    const matchesRisk = riskFilter === "all" || item.combinedRisk.toLowerCase() === riskFilter;
+    const matchesPolicy = policyFilter === "all" || item.policyType === policyFilter;
+    const matchesMonth = monthFilter === "all" || item.submittedAt.includes(monthFilter);
+    return matchesSearch && matchesRisk && matchesPolicy && matchesMonth;
+  });
+
+  const selectedQueueItem =
+    filteredQueue.find((item) => item.claimId === selectedClaimId) ||
+    filteredQueue[0] ||
+    normalizedQueue[0] ||
+    null;
+
+  useEffect(() => {
+    if (!selectedQueueItem) {
+      setSelectedClaimId("");
+      return;
+    }
+
+    if (selectedClaimId !== selectedQueueItem.claimId) {
+      setSelectedClaimId(selectedQueueItem.claimId);
+    }
+  }, [selectedClaimId, selectedQueueItem]);
+
+  const filteredHighRiskCount = filteredQueue.filter((item) => item.combinedRisk === "High").length;
+  const filteredReviewCount = filteredQueue.filter((item) => item.combinedRisk === "Review").length;
+
   return (
     <>
       <section className="hero-grid">
@@ -720,44 +791,174 @@ function CompanyDashboard({ liveAlerts, metrics, queue }) {
 
       <section className="content-grid company-layout">
         <div className="card">
+          <p className="section-title">Queue Search And Filters</p>
+          <div className="dashboard-toolbar">
+            <label className="toolbar-field toolbar-search">
+              <span>Search claims</span>
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search by claim ID, claimant, policy, or reason"
+              />
+            </label>
+            <label className="toolbar-field">
+              <span>Risk</span>
+              <select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value)}>
+                <option value="all">All risk levels</option>
+                <option value="high">High</option>
+                <option value="review">Review</option>
+                <option value="low">Low</option>
+              </select>
+            </label>
+            <label className="toolbar-field">
+              <span>Policy</span>
+              <select value={policyFilter} onChange={(event) => setPolicyFilter(event.target.value)}>
+                <option value="all">All policy types</option>
+                {availablePolicies.map((policy) => (
+                  <option key={policy} value={policy}>
+                    {policy}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="toolbar-field">
+              <span>Month</span>
+              <select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)}>
+                <option value="all">All months</option>
+                {availableMonths.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div className="card filter-snapshot">
+          <p className="section-title">Filtered View</p>
+          <div className="filter-kpis">
+            <article className="mini-kpi">
+              <span>Matching Claims</span>
+              <strong>{filteredQueue.length}</strong>
+            </article>
+            <article className="mini-kpi">
+              <span>High Risk Matches</span>
+              <strong>{filteredHighRiskCount}</strong>
+            </article>
+            <article className="mini-kpi">
+              <span>Review Matches</span>
+              <strong>{filteredReviewCount}</strong>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="content-grid company-layout">
+        <div className="card">
           <p className="section-title">Investigation Queue</p>
           <div className="queue-list">
-            {queue.map((item) => (
-              <article key={item.claim_id ?? item.claimId} className="queue-card">
+            {filteredQueue.map((item) => (
+              <article
+                key={item.claimId}
+                className={selectedQueueItem?.claimId === item.claimId ? "queue-card selected" : "queue-card"}
+                onClick={() => setSelectedClaimId(item.claimId)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedClaimId(item.claimId);
+                  }
+                }}
+              >
                 <div className="queue-topline">
-                  <strong>{item.claim_id ?? item.claimId}</strong>
-                  <span className={`status-chip ${(item.combined_risk ?? item.combinedRisk).toLowerCase()}`}>
-                    {item.combined_risk ?? item.combinedRisk}
+                  <strong>{item.claimId}</strong>
+                  <span className={`status-chip ${item.combinedRisk.toLowerCase()}`}>
+                    {item.combinedRisk}
                   </span>
                 </div>
                 <p className="queue-meta">
-                  {item.claimant} • {item.policy_type ?? item.policyType} • {item.amount}
+                  {item.claimant} • {item.policyType} • {item.amount}
                 </p>
+                <p className="queue-time">Submitted {item.submittedAt || "Unknown"}</p>
                 <div className="risk-bars">
-                  <RiskBar label="NLP Risk" value={item.nlp_risk ?? item.nlpRisk} />
-                  <RiskBar label="Document Risk" value={item.document_risk ?? item.documentRisk} />
-                  <RiskBar label="Behaviour Risk" value={item.behavioural_risk ?? item.behaviouralRisk} />
+                  <RiskBar label="NLP Risk" value={item.nlpRisk} />
+                  <RiskBar label="Document Risk" value={item.documentRisk} />
+                  <RiskBar label="Behaviour Risk" value={item.behaviouralRisk} />
                 </div>
-                <p className="queue-detail">{item.alert_reason ?? item.alertReason}</p>
+                <p className="queue-detail">{item.alertReason}</p>
               </article>
             ))}
+            {filteredQueue.length === 0 ? (
+              <article className="queue-card queue-empty">
+                <h3>No matching claims</h3>
+                <p>Try clearing one of the filters or searching with a broader claim reference.</p>
+              </article>
+            ) : null}
           </div>
         </div>
 
         <div className="card">
-          <p className="section-title">Live Monitoring Feed</p>
-          <div className="alert-list">
-            {liveAlerts.map((alert) => (
-              <article key={alert.id} className={`alert-card severity-${alert.severity.toLowerCase()}`}>
-                <div className="alert-header">
-                  <strong>{alert.id}</strong>
-                  <span>{alert.time}</span>
+          <p className="section-title">Claim Review Workspace</p>
+          {selectedQueueItem ? (
+            <div className="case-workspace">
+              <div className="workspace-headline">
+                <div>
+                  <h3>{selectedQueueItem.claimId}</h3>
+                  <p>
+                    {selectedQueueItem.claimant} • {selectedQueueItem.policyType}
+                  </p>
                 </div>
-                <h3>{alert.title}</h3>
-                <p>{alert.detail}</p>
-              </article>
-            ))}
-          </div>
+                <span className={`status-chip ${selectedQueueItem.combinedRisk.toLowerCase()}`}>
+                  {selectedQueueItem.combinedRisk}
+                </span>
+              </div>
+              <div className="workspace-grid">
+                <article className="workspace-panel">
+                  <span>Submitted</span>
+                  <strong>{selectedQueueItem.submittedAt || "Unknown"}</strong>
+                </article>
+                <article className="workspace-panel">
+                  <span>Claim Amount</span>
+                  <strong>{selectedQueueItem.amount}</strong>
+                </article>
+                <article className="workspace-panel">
+                  <span>NLP Risk</span>
+                  <strong>{Math.round(selectedQueueItem.nlpRisk * 100)}%</strong>
+                </article>
+                <article className="workspace-panel">
+                  <span>Document Risk</span>
+                  <strong>{Math.round(selectedQueueItem.documentRisk * 100)}%</strong>
+                </article>
+                <article className="workspace-panel">
+                  <span>Behaviour Risk</span>
+                  <strong>{Math.round(selectedQueueItem.behaviouralRisk * 100)}%</strong>
+                </article>
+              </div>
+              <div className="workspace-notes">
+                <p className="section-title">Investigator Focus</p>
+                <p>{selectedQueueItem.alertReason}</p>
+              </div>
+              <div className="alert-list compact-alerts">
+                {liveAlerts.slice(0, 4).map((alert) => (
+                  <article key={alert.id} className={`alert-card severity-${alert.severity.toLowerCase()}`}>
+                    <div className="alert-header">
+                      <strong>{alert.id}</strong>
+                      <span>{alert.time}</span>
+                    </div>
+                    <h3>{alert.title}</h3>
+                    <p>{alert.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="queue-card queue-empty">
+              <h3>No claim selected</h3>
+              <p>The review workspace will update when a queue item matches your filters.</p>
+            </div>
+          )}
         </div>
       </section>
     </>
