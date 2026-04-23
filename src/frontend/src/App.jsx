@@ -60,8 +60,7 @@ function App() {
       setHomeData(payload);
       setLiveAlerts(payload.live_alerts || liveAlertsSeed);
     } catch (error) {
-      // I keep the homepage usable on local mock data when the API is offline.
-      console.warn("I could not load the public insurance homepage data.", error);
+      console.warn("Could not load the public insurance homepage data.", error);
     }
   }
 
@@ -76,7 +75,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error("I could not complete the login.");
+        throw new Error("Unable to complete login.");
       }
 
       const payload = await response.json();
@@ -87,14 +86,14 @@ function App() {
         fullName: payload.full_name,
         email: payload.email,
         status: "authenticated",
-        message: `I signed in as ${payload.full_name}.`
+        message: `${payload.full_name} signed in successfully.`
       });
       setActiveView(payload.role === "investigator" ? "company" : "customer");
     } catch (error) {
       setAuthState((currentState) => ({
         ...currentState,
         status: "error",
-        message: "I could not verify the login details."
+        message: "Login verification failed."
       }));
     }
   }
@@ -107,7 +106,7 @@ function App() {
       fullName: "",
       email: "",
       status: "logged_out",
-      message: "I signed out of the current session."
+      message: "Signed out of current session."
     });
     setActiveView("home");
   }
@@ -137,13 +136,12 @@ function App() {
       setCompanyData(companyPayload);
       setLiveAlerts(companyPayload.live_alerts || liveAlertsSeed);
     } catch (error) {
-      // I keep the frontend on mock data if the local API is not running yet.
-      console.warn("I could not load the protected insurance dashboard data.", error);
+      console.warn("Could not load the protected insurance dashboard data.", error);
     }
   }
 
   async function handleClaimSubmission(formValues) {
-    setSubmissionState({ status: "submitting", message: "I am sending the claim to the insurance API." });
+    setSubmissionState({ status: "submitting", message: "Submitting claim to the insurance API." });
 
     try {
       const formData = new FormData();
@@ -163,7 +161,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error("I could not save the new claim.");
+        throw new Error("Could not save the new claim.");
       }
 
       const payload = await response.json();
@@ -179,14 +177,14 @@ function App() {
       await loadProtectedData();
       setSubmissionState({
         status: "success",
-        message: `I created claim ${payload.claim_id}, stored the evidence file, and pushed it into the investigation workflow.`
+        message: `Claim ${payload.claim_id} submitted successfully and added to the investigation workflow.`
       });
       setSelectedEvidenceFile(null);
       setActiveView(authState.role === "investigator" ? "company" : "customer");
     } catch (error) {
       setSubmissionState({
         status: "error",
-        message: "I could not submit the claim. Please make sure the local API is running."
+        message: "Unable to submit the claim. Please make sure the local API is running."
       });
     }
   }
@@ -216,7 +214,6 @@ function App() {
     };
 
     websocket.onerror = () => {
-      // I silently fall back here because the demo can still run without the socket.
       websocket.close();
     };
 
@@ -305,9 +302,9 @@ function LoginPanel({ authState, onLogin }) {
   return (
     <section className="card login-panel">
       <p className="section-title">Authentication</p>
-      <h2>I protect claimants and investigators with separate roles.</h2>
+      <h2>Secure access for claimants and investigators.</h2>
       <p className="lead">
-        I now require sign-in before opening protected claim or investigation views.
+        Sign in to access protected claim and investigation dashboards.
       </p>
       <form className="claim-form" onSubmit={handleSubmit}>
         <div className="form-grid">
@@ -323,7 +320,7 @@ function LoginPanel({ authState, onLogin }) {
         <button className="action-button" type="submit">
           Sign In
         </button>
-        <p className="evidence-note">I seeded demo accounts: `demo_user / UserPass123!` and `investigator_anna / InvestigatorPass123!`.</p>
+        <p className="evidence-note">Demo accounts available: `demo_user / UserPass123!` and `investigator_anna / InvestigatorPass123!`.</p>
         {authState.message ? <p className={`form-status ${authState.status === "authenticated" ? "success" : "error"}`}>{authState.message}</p> : null}
       </form>
     </section>
@@ -344,15 +341,10 @@ function HomePage({
       <section className="hero-grid">
         <div className="hero-copy card spotlight">
           <p className="eyebrow">Real-Time Insurance Experience</p>
-          <h2>I screen claim stories, receipts, and behaviour together.</h2>
+          <h2>Screen claim stories, receipts, and behaviour together.</h2>
           <p className="lead">
-            I turn the project into one realistic insurance product flow with a public homepage, a policyholder dashboard, and a live fraud-operations dashboard.
+            This demo delivers a realistic insurance workflow with a public homepage, policyholder dashboard, and live fraud operations console.
           </p>
-          <div className="pill-row">
-            <span className="pill">Issue #23: React Frontend Skeleton</span>
-            <span className="pill">Issue #24: Dashboard Components</span>
-            <span className="pill">Issue #25: Live Alert Flow Ready</span>
-          </div>
         </div>
 
         <div className="card kpi-stack">
@@ -378,7 +370,7 @@ function HomePage({
             {publicFeatures.map((feature) => (
               <article key={feature.title} className="feature-card">
                 <h3>{feature.title}</h3>
-                <p>{feature.text}</p>
+                <p>{feature.description}</p>
               </article>
             ))}
           </div>
@@ -390,10 +382,10 @@ function HomePage({
             {liveAlerts.map((alert) => (
               <article key={alert.id} className={`alert-card severity-${alert.severity.toLowerCase()}`}>
                 <div className="alert-header">
-                  <strong>{alert.title}</strong>
-                  <span>{alert.time}</span>
+                  <strong>{alert.type.replace(/_/g, " ")}</strong>
+                  <span>{new Date(alert.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
-                <p>{alert.detail}</p>
+                <p>{alert.message}</p>
               </article>
             ))}
           </div>
@@ -405,8 +397,8 @@ function HomePage({
           <p className="section-title">Behavioural Signals</p>
           <div className="signal-grid">
             {behaviouralFieldCards.map((field) => (
-              <article key={field.name} className="signal-card">
-                <h3>{field.name}</h3>
+              <article key={field.field} className="signal-card">
+                <h3>{field.field}</h3>
                 <p>{field.description}</p>
               </article>
             ))}
@@ -423,8 +415,8 @@ function HomePage({
               Genuine Claim
             </button>
             <button
-              className={activeEmailSample === "fraud" ? "sample-button active" : "sample-button"}
-              onClick={() => setActiveEmailSample("fraud")}
+              className={activeEmailSample === "suspicious" ? "sample-button active" : "sample-button"}
+              onClick={() => setActiveEmailSample("suspicious")}
             >
               Fraudulent Claim
             </button>
@@ -501,9 +493,9 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
       <section className="hero-grid">
         <div className="card spotlight">
           <p className="eyebrow">Policyholder Dashboard</p>
-          <h2>I give claimants a clean view of their claims and next steps.</h2>
+          <h2>Claimants see clear status updates and next steps.</h2>
           <p className="lead">
-            I keep this page simple so a user can see claim status, payout progress, and what evidence is still required.
+            This dashboard keeps claim status, payout progress, and evidence requirements easy to review.
           </p>
           <p className="evidence-note">Signed in as {currentUser.fullName || currentUser.username}</p>
         </div>
@@ -637,11 +629,11 @@ function CustomerDashboard({ claims, onSubmitClaim, onSelectEvidenceFile, select
               {submissionState.status === "submitting" ? "Submitting Claim..." : "Submit New Claim"}
             </button>
             {selectedEvidenceFile ? (
-              <p className="evidence-note">I will upload evidence file: {selectedEvidenceFile.name}</p>
+              <p className="evidence-note">Selected evidence file: {selectedEvidenceFile.name}</p>
             ) : (
               <>
-                <p className="evidence-note">I can attach a receipt image or PDF evidence file before submission.</p>
-                <p className="evidence-note">I bind the claimant identity to the signed-in policyholder account for claim submission.</p>
+                <p className="evidence-note">Attach a receipt image or PDF evidence file before submission.</p>
+                <p className="evidence-note">Claimant identity is bound to the signed-in policyholder account.</p>
               </>
             )}
             {submissionState.message ? (
@@ -693,9 +685,9 @@ function CompanyDashboard({ liveAlerts, metrics, queue }) {
       <section className="hero-grid">
         <div className="card spotlight">
           <p className="eyebrow">Fraud Operations Dashboard</p>
-          <h2>I give investigators one place to watch claim risk in real time.</h2>
+          <h2>Investigators can monitor claim risk in real time.</h2>
           <p className="lead">
-            I combine operational metrics, live alerts, and the review queue so the company can act at the claim-submission stage.
+            Operational metrics, live alerts, and the review queue are combined for faster fraud response.
           </p>
         </div>
         <div className="card kpi-grid">
@@ -731,14 +723,16 @@ function CompanyDashboard({ liveAlerts, metrics, queue }) {
                   </span>
                 </div>
                 <p className="queue-meta">
-                  {item.claimant} • {item.policy_type ?? item.policyType} • {item.amount}
+                  {item.assignee ?? item.claimant ?? "Unassigned"} • {item.type ?? item.policy_type ?? item.policyType} • £{item.amount}
                 </p>
-                <div className="risk-bars">
-                  <RiskBar label="NLP Risk" value={item.nlp_risk ?? item.nlpRisk} />
-                  <RiskBar label="Document Risk" value={item.document_risk ?? item.documentRisk} />
-                  <RiskBar label="Behaviour Risk" value={item.behavioural_risk ?? item.behaviouralRisk} />
-                </div>
-                <p className="queue-detail">{item.alert_reason ?? item.alertReason}</p>
+                {typeof (item.nlp_risk ?? item.nlpRisk) === "number" ? (
+                  <div className="risk-bars">
+                    <RiskBar label="NLP Risk" value={item.nlp_risk ?? item.nlpRisk} />
+                    <RiskBar label="Document Risk" value={item.document_risk ?? item.documentRisk} />
+                    <RiskBar label="Behaviour Risk" value={item.behavioural_risk ?? item.behaviouralRisk} />
+                  </div>
+                ) : null}
+                <p className="queue-detail">{item.alert_reason ?? item.alertReason ?? "Review for potential fraud"}</p>
               </article>
             ))}
           </div>
