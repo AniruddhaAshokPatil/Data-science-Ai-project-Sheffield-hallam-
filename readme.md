@@ -1,22 +1,22 @@
-# **ShieldWise - Insurance Claim Fraud Detection Platform**
+# **ShieldWise - Gadget Insurance Claim Fraud Detection Platform**
 
-ShieldWise is my insurance claim fraud detection project. I built it to show how fraud detection can work as a full application, not only as separate model notebooks.
+ShieldWise is my gadget and electronics insurance fraud detection project. I built it to show how suspicious device claims can be screened inside a working application, not only inside separate model notebooks.
 
-The project brings together a FastAPI backend, a React dashboard, supporting model work, and insurance claim data so the whole workflow can be tested from claim submission through to investigator review.
+The project brings together a FastAPI backend, a React dashboard, supporting model work, and device-claim data so the workflow can be tested from policyholder submission through to investigator review.
 
 ---
 
 ## **What ShieldWise Does**
 
-ShieldWise simulates how an insurer could receive claims, check the evidence, and highlight claims that may need closer review.
+ShieldWise simulates how a gadget insurer, electronics warranty provider, or device-protection company could receive claims, check the evidence, and highlight claims that may need closer review.
 
 At a high level, it:
 
-* Accepts insurance claims through a structured submission form
-* Allows optional upload of supporting evidence (e.g. receipts)
+* Accepts gadget and electronics claims through a structured submission form
+* Allows upload of purchase receipts, repair invoices, and claimant ID cards
 * Analyses claim text for suspicious language patterns
-* Evaluates behavioural signals from claim history
-* Performs lightweight document checks on uploaded evidence
+* Evaluates behavioural signals from device claim history
+* Performs lightweight document checks on uploaded receipt and ID evidence
 * Streams live alerts to investigators
 * Displays results in both customer and investigator dashboards
 
@@ -34,7 +34,7 @@ Located in `src/api/`
 
 Handles:
 
-* Claim intake and validation
+* Gadget claim intake and validation
 * Risk scoring (language + behaviour + document checks)
 * Data storage using SQLite
 * WebSocket streaming for real-time alerts
@@ -48,7 +48,7 @@ Located in `src/frontend/`
 Provides:
 
 * Public homepage
-* Policyholder dashboard (submit + track claims)
+* Policyholder dashboard (submit + track device claims)
 * Investigator dashboard (review + alerts)
 
 ---
@@ -72,18 +72,18 @@ $$
 
 ### **1. Behavioural Risk**
 
-* Based on claim patterns and history
-* Looks at frequency, timing, and unusual activity
+* Based on device claim patterns and history
+* Looks at frequency, timing, account changes, and unusual high-value electronics activity
 
 ### **2. Language Risk (NLP)**
 
-* Analyses claim descriptions and emails
+* Analyses gadget claim descriptions and emails
 * Flags suspicious wording patterns
 
 ### **3. Document Risk (CV-inspired, rule-based runtime)**
 
-* Checks uploaded receipts or documents
-* Focuses on structure consistency rather than heavy model inference
+* Checks uploaded receipts, repair invoices, and ID documents
+* Focuses on evidence consistency rather than heavy model inference during the live demo
 
 ---
 
@@ -93,7 +93,7 @@ This project uses a mix of structured, text, and image data. Each dataset is use
 
 ---
 
-### **Insurance Claim Data (Core System Data)**
+### **Gadget Insurance Claim Data (Core System Data)**
 
 Located in:
 
@@ -108,7 +108,7 @@ Files:
 
 Used for:
 
-* Claim workflows
+* Gadget claim workflows
 * Behavioural risk scoring
 * Dashboard visualisation
 
@@ -122,7 +122,7 @@ data/raw/nlp/claim_email_ham_spam.csv
 
 Used for:
 
-* Training the claim-language risk component
+* Training the claim-language risk component for device-related claim messages
 
 Important note:
 
@@ -131,7 +131,7 @@ Important note:
 
 ---
 
-### **Receipt Dataset (Evidence / CV Context)**
+### **Receipt Dataset (Device Evidence / CV Context)**
 
 **Dataset:** ExpressExpense SRD
 **Source:** [https://expressexpense.com](https://expressexpense.com)
@@ -149,8 +149,8 @@ Details:
 
 Used for:
 
-* Document structure understanding
-* Supporting evidence validation logic
+* Purchase receipt structure understanding
+* Supporting evidence validation logic for device claims
 
 Citation:
 
@@ -173,8 +173,8 @@ Details:
 
 Used for:
 
-* Understanding document variability
-* Supporting document fraud concepts
+* Understanding ID document variability
+* Supporting claimant identity checks for high-value gadget claims
 
 ---
 
@@ -196,7 +196,7 @@ This is intentional. My focus is on **system design and integration**, while bei
 .
 ├── backend/                        # Stored model artifacts (NLP, receipt research)
 ├── data/
-│   ├── raw/insurance_claims/       # Core structured claim data
+│   ├── raw/insurance_claims/       # Core structured gadget claim data
 │   ├── raw/nlp/                    # NLP dataset
 │   └── processed/                  # Runtime outputs + SQLite DB
 ├── docs/
@@ -291,7 +291,7 @@ A consolidated evaluation notebook for the current ShieldWise submission is avai
 
 ## **Design Decisions (Why This Approach)**
 
-* I focused on the **real insurance workflow first**, then connected the model work around it
+* I focused on the **real gadget claim workflow first**, then connected the model work around it
 * I kept the live document checks lightweight so the app remains quick during a demo
 * I used WebSockets to show how investigators can receive live alerts
 * I separated the backend and frontend so the project is easier to understand and extend
@@ -309,7 +309,7 @@ A consolidated evaluation notebook for the current ShieldWise submission is avai
 
 ## **Final Note**
 
-ShieldWise is designed to show how fraud detection works **inside a system**, not just inside a notebook.
+ShieldWise is designed to show how gadget claim fraud detection works **inside a system**, not just inside a notebook.
 
 It connects:
 

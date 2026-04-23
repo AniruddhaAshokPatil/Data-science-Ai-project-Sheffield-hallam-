@@ -1,21 +1,21 @@
-# Insurance Claim Samples
+# Gadget Insurance Claim Samples
 
-This file keeps a few realistic examples of insurance claim inputs in one place.
+This file keeps a few realistic examples of gadget insurance claim inputs in one place.
 I use these samples for UI testing, product demonstrations, and clear explanation of the fraud-screening logic.
 
 ## Suggested Behavioural Or Claim-History Fields
 
-The project starts with a small set of fields that are easy to explain and believable in an insurance claim workflow:
+The project starts with a small set of fields that are easy to explain and believable in a gadget and electronics insurance claim workflow:
 
 | Field | Meaning | Why it is useful |
 | --- | --- | --- |
 | `prior_claims_count` | Number of previous claims by the claimant | Helps show repeat claiming behaviour |
 | `days_since_policy_start` | How long the policy has been active before the claim | Helps detect early claims soon after policy purchase |
-| `claim_amount_vs_item_value_ratio` | Claimed amount divided by expected item value | Helps catch inflation or overstatement |
-| `recent_high_value_purchase_flag` | Whether the claimant recently showed unusual high-value activity | Provides a simple behavioural risk signal |
+| `claim_amount_vs_item_value_ratio` | Claimed amount divided by expected device value | Helps catch inflation or overstatement |
+| `recent_high_value_purchase_flag` | Whether the claimant recently bought a high-value device | Provides a simple behavioural risk signal |
 | `late_night_submission_flag` | Whether the claim was submitted at an unusual time | Provides a weak but useful contextual flag |
-| `receipt_mismatch_flag` | Whether the claimed story and receipt details do not align | Connects text and evidence together |
-| `duplicate_receipt_flag` | Whether the uploaded receipt appears reused | Helps detect repeated or fabricated proof |
+| `receipt_mismatch_flag` | Whether the claimed device story and receipt details do not align | Connects text and evidence together |
+| `duplicate_receipt_flag` | Whether the uploaded device receipt appears reused | Helps detect repeated or fabricated proof |
 | `address_change_last_30_days_flag` | Whether the address changed shortly before the claim | Supports identity-risk review |
 | `bank_detail_change_last_30_days_flag` | Whether payout details changed recently | Highlights account-change risk |
 | `claims_last_12_months` | Number of claims in the last year | Measures short-term claim frequency |
@@ -72,5 +72,5 @@ Daniel
 
 ## How These Samples Are Used In The App
 
-The email text is passed into the NLP model, the receipt image is used by the evidence workflow, and the claim-history fields are combined in the behavioural risk scorer.
+The email text is passed into the NLP model, the device receipt image is used by the evidence workflow, and the claim-history fields are combined in the behavioural risk scorer.
 The app then presents one final recommendation such as `Low Risk`, `Review Needed`, or `High Risk`, which keeps the result easy for a user or investigator to understand.

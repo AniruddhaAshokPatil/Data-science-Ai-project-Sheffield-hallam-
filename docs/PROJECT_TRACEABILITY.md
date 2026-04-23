@@ -2,18 +2,18 @@
 
 Audit date: 2026-04-21
 
-This note records what is actually tracked in the repository after cleanup. I am using it as the ground truth for the submission narrative so the README, issue notes, and codebase all describe the same project.
+This note records what is actually tracked in the repository after cleanup. I am using it as the ground truth for the submission narrative so the README, issue notes, and codebase all describe the same gadget insurance project.
 
 ## Current Project Shape
 
-The repository now centres on one tracked product: `ShieldWise`, the insurance claim fraud platform.
+The repository now centres on one tracked product: `ShieldWise`, the gadget and electronics insurance claim fraud platform.
 
 The active submission consists of:
 
 - FastAPI application code in `src/api/`
 - React frontend code in `src/frontend/`
 - regression tests in `tests/test_api_insurance.py`
-- insurance datasets in `data/raw/insurance_claims/`
+- gadget-focused insurance datasets in `data/raw/insurance_claims/`
 - supporting model artifacts in `backend/`
 
 ## Active Runtime Paths
@@ -23,9 +23,9 @@ The active submission consists of:
 | `src/api/` | Main backend for the current project | Active |
 | `src/frontend/` | Main frontend for the current project | Active |
 | `tests/test_api_insurance.py` | API regression coverage | Active |
-| `data/raw/insurance_claims/` | Main input data for the insurance workflow | Active |
+| `data/raw/insurance_claims/` | Main input data for the gadget claim workflow | Active |
 | `data/processed/shieldwise_runtime.db` | Local runtime state during demos | Generated locally |
-| `backend/receipts_models/` | Receipt CV model artifacts that support insurance evidence scoring research | Supporting assets |
+| `backend/receipts_models/` | Receipt CV model artifacts that support device evidence scoring research | Supporting assets |
 | `backend/saved_models/` | NLP and related saved model artifacts retained for supporting workflow research | Supporting assets |
 
 ## Cleanup Decisions

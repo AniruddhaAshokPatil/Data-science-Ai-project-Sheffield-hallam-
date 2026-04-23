@@ -4,12 +4,12 @@ Audit date: 2026-04-22
 
 This document rewrites Issues `1` to `30` so they match the current repository implementation only.
 
-The tracked project is `ShieldWise`, an insurance claim fraud detection platform with:
+The tracked project is `ShieldWise`, a gadget and electronics insurance claim fraud detection platform with:
 
 - a FastAPI backend in `src/api/`
 - a React frontend in `src/frontend/`
-- insurance claim submission and dashboard workflows
-- optional evidence upload and document-risk checks
+- gadget claim submission and dashboard workflows
+- receipt, repair invoice, ID-card evidence upload, and document-risk checks
 - claim-language risk scoring
 - behavioural claim-risk scoring
 - live alert streaming through WebSockets
@@ -36,13 +36,13 @@ Each issue below uses the same structure:
 - `data/raw/insurance_claims/claim_history_detailed.csv`
 - `data/raw/insurance_claims/submitted_claims.csv`
 
-These support the insurance dashboards, claim history, and backend workflow used in the current submission.
+These support the gadget insurance dashboards, claim history, and backend workflow used in the current submission.
 
 ### NLP Data
 
 - `data/raw/nlp/claim_email_ham_spam.csv`
 
-This supports the claim-language risk workflow. It should be described as a project dataset used for prototype NLP scoring, not as a validated real-world insurer communication benchmark.
+This supports the gadget claim-language risk workflow. It should be described as a project dataset used for prototype NLP scoring, not as a validated real-world insurer communication benchmark.
 
 ### Evidence / CV Assets
 
@@ -50,7 +50,7 @@ This supports the claim-language risk workflow. It should be described as a proj
 - `backend/receipts_models/`
 - `backend/saved_models/`
 
-These support receipt and document-risk research assets retained in the repository. The current API document-risk flow is intentionally lightweight and rule-based at runtime, even though supporting model artifacts remain in the repository.
+These support receipt and document-risk research assets retained in the repository for device evidence review. The current API document-risk flow is intentionally lightweight and rule-based at runtime, even though supporting model artifacts remain in the repository.
 
 ### Runtime and Delivery Assets
 
@@ -74,7 +74,7 @@ Prepare the Insurance Claim NLP Dataset
 Create a clean, model-ready text dataset for claim-language risk analysis.
 
 **Issue Description**  
-This issue covers preparing the insurance claim email and claim-language dataset used by the NLP component. The workflow should clean and normalise text, preserve useful fraud cues such as urgency language and payment-change phrasing, and convert the text into a stable form for model training and inference.
+This issue covers preparing the gadget insurance claim email and claim-language dataset used by the NLP component. The workflow should clean and normalise text, preserve useful fraud cues such as urgency language and payment-change phrasing, and convert the text into a stable form for model training and inference.
 
 **Key Inputs / Project Assets**
 - `data/raw/nlp/claim_email_ham_spam.csv`
@@ -247,7 +247,7 @@ Encode Structured Insurance Claim Fields
 Prepare structured insurance claim fields for analysis and scoring.
 
 **Issue Description**  
-This issue covers preparing structured insurance claim attributes such as policy type, incident type, item category, and related claim context fields so they can support the behavioural risk workflow and dashboard summaries.
+This issue covers preparing structured gadget insurance claim attributes such as policy type, incident type, device category, and related claim context fields so they can support the behavioural risk workflow and dashboard summaries.
 
 **Key Inputs / Project Assets**
 - `data/raw/insurance_claims/claim_history_detailed.csv`
@@ -309,7 +309,7 @@ This issue covers engineering and applying behavioural fraud indicators such as 
 Clean Missing Values and Sparse Insurance Fields
 
 **Issue Objective**  
-Improve data quality for the active insurance workflow.
+Improve data quality for the active gadget insurance workflow.
 
 **Issue Description**  
 This issue covers handling missing values and sparse fields in the insurance data used by the dashboards and backend services. The goal is to keep the project stable and interpretable without relying on noisy or unusable fields.
@@ -499,7 +499,7 @@ Create the Project Charter
 Define scope, outcomes, and delivery boundaries for ShieldWise.
 
 **Issue Description**  
-This issue covers framing the project correctly as an insurance claim fraud detection platform with claim submission, evidence checks, risk scoring, dashboards, and live alerts.
+This issue covers framing the project correctly as a gadget and electronics insurance claim fraud detection platform with claim submission, receipt and ID evidence checks, risk scoring, dashboards, and live alerts.
 
 **Key Inputs / Project Assets**
 - README
@@ -527,7 +527,7 @@ This issue covers framing the project correctly as an insurance claim fraud dete
 Establish the Baseline Behavioural Claim-Risk Scoring Logic
 
 **Issue Objective**  
-Create an initial structured fraud-scoring baseline for the insurance workflow.
+Create an initial structured fraud-scoring baseline for the gadget insurance workflow.
 
 **Issue Description**  
 This issue covers the baseline behavioural scoring logic used to assess claim risk from structured claim features. In the current repository this is implemented as explainable scoring logic rather than a separate production-grade tabular model.
@@ -563,7 +563,7 @@ Refine the Claim-Risk Scoring Rules
 Improve the quality and separation of the behavioural scoring component.
 
 **Issue Description**  
-This issue covers refining the weights, thresholds, and decision logic used in the structured insurance risk workflow so the claim scoring is more realistic and easier to justify in the final submission.
+This issue covers refining the weights, thresholds, and decision logic used in the structured gadget insurance risk workflow so the claim scoring is more realistic and easier to justify in the final submission.
 
 **Key Inputs / Project Assets**
 - `src/api/services/insurance_data.py`
@@ -621,10 +621,10 @@ This issue covers the repository’s retained supporting model assets for broade
 Support Document and Receipt Evidence Analysis
 
 **Issue Objective**  
-Provide the evidence-analysis component of the insurance workflow.
+Provide the evidence-analysis component of the gadget insurance workflow.
 
 **Issue Description**  
-This issue covers the project’s document and receipt evidence analysis path. In the current running API, document-risk scoring is lightweight and rule-based, focusing on duplicate evidence detection, image readability, image size, aspect ratio, palette checks, and basic PDF characteristics. Supporting receipt-model artefacts remain in the repository as research assets, but the live API relies on the runtime checks implemented in the service layer.
+This issue covers the project’s document and receipt evidence analysis path for device claims. In the current running API, document-risk scoring is lightweight and rule-based, focusing on duplicate evidence detection, image readability, image size, aspect ratio, palette checks, and basic PDF characteristics. Supporting receipt-model artefacts remain in the repository as research assets, but the live API relies on the runtime checks implemented in the service layer.
 
 **Key Inputs / Project Assets**
 - uploaded evidence files
@@ -660,7 +660,7 @@ Train and Integrate the Claim-Language Risk Model
 Provide the NLP component used for email or claim-language risk scoring.
 
 **Issue Description**  
-This issue covers the NLP training workflow and the claim-language scoring logic used in the insurance platform. The repository includes training scripts and saved model artefacts, and the runtime scoring path uses that work to separate more genuine claim language from suspicious claim language.
+This issue covers the NLP training workflow and the claim-language scoring logic used in the gadget insurance platform. The repository includes training scripts and saved model artefacts, and the runtime scoring path uses that work to separate more genuine claim language from suspicious claim language.
 
 **Key Inputs / Project Assets**
 - `data/raw/nlp/claim_email_ham_spam.csv`
@@ -729,10 +729,10 @@ This issue covers the FastAPI application setup, including app startup, routing,
 Add Insurance Claim Prediction and Submission Endpoints
 
 **Issue Objective**  
-Expose the insurance workflow through backend endpoints.
+Expose the gadget insurance workflow through backend endpoints.
 
 **Issue Description**  
-This issue covers the backend endpoints that accept claims, calculate risk signals, return dashboard-ready outputs, and support evidence upload. In the current repo these are insurance-specific endpoints rather than generic tabular/CV/NLP standalone APIs.
+This issue covers the backend endpoints that accept gadget claims, calculate risk signals, return dashboard-ready outputs, and support receipt, repair invoice, and ID-card evidence upload. In the current repo these are insurance-specific endpoints rather than generic tabular/CV/NLP standalone APIs.
 
 **Key Inputs / Project Assets**
 - `src/api/routers/insurance.py`
@@ -744,7 +744,7 @@ This issue covers the backend endpoints that accept claims, calculate risk signa
 - Dashboard endpoints
 
 **Acceptance Criteria**
-- Endpoints return valid insurance workflow responses
+- Endpoints return valid gadget insurance workflow responses
 - Risk outputs are included where expected
 
 **Current Repo Evidence**

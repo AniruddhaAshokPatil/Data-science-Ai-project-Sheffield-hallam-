@@ -137,16 +137,16 @@ def create_submitted_claim(
 def _build_public_features() -> list[PublicFeature]:
     return [
         PublicFeature(
-            title="Faster Claim Intake",
-            text="Policyholders receive a structured claim submission flow with evidence upload and instant progress feedback.",
+            title="Faster Gadget Claim Intake",
+            text="Policyholders receive a structured device-claim flow for laptops, phones, tablets, cameras, and other insured electronics.",
         ),
         PublicFeature(
-            title="Multimodal Fraud Screening",
-            text="Claim language, document evidence, and behavioural history are combined into one risk recommendation.",
+            title="Receipt and ID Evidence Checks",
+            text="Purchase receipts, repair invoices, ID cards, claim language, and account behaviour are combined into one review recommendation.",
         ),
         PublicFeature(
-            title="Live Operations View",
-            text="Fraud teams receive a queue, alert feed, and cross-signal case context from one insurance dashboard.",
+            title="Live Gadget Review Queue",
+            text="Fraud teams receive a queue, alert feed, and cross-signal case context for high-value electronics claims.",
         ),
     ]
 
@@ -155,7 +155,7 @@ def _build_behavioural_fields() -> list[FeatureCard]:
     return [
         FeatureCard(
             name="Prior Claims Count",
-            description="Shows whether the claimant has a repeat-claiming pattern.",
+            description="Shows whether the claimant has a repeat pattern of gadget or electronics claims.",
         ),
         FeatureCard(
             name="Days Since Policy Start",
@@ -167,7 +167,7 @@ def _build_behavioural_fields() -> list[FeatureCard]:
         ),
         FeatureCard(
             name="High Value Purchase Flag",
-            description="Marks recent high-value purchases that may need supporting evidence.",
+            description="Marks recent high-value device purchases that may need stronger supporting evidence.",
         ),
         FeatureCard(
             name="Spend Spike Flag",

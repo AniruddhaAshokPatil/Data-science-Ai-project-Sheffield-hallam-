@@ -318,7 +318,7 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">Insurance Claim Fraud Platform</p>
+          <p className="eyebrow">Gadget Insurance Fraud Platform</p>
           <h1>ShieldWise</h1>
         </div>
         <nav className="topbar-nav">
@@ -434,10 +434,10 @@ function HomePage({
     <>
       <section className="hero-grid customer-dashboard-grid">
         <div className="hero-copy card spotlight">
-          <p className="eyebrow">Real-Time Insurance Experience</p>
-          <h2>Screen claim stories, receipts, and behaviour together.</h2>
+          <p className="eyebrow">Real-Time Gadget Claims Experience</p>
+          <h2>Screen device claims, receipts, ID evidence, and behaviour together.</h2>
           <p className="lead">
-            This demo delivers a realistic insurance workflow with a public homepage, policyholder dashboard, and live fraud operations console.
+            This demo focuses on gadget and electronics insurance claims for laptops, phones, tablets, cameras, and similar high-value devices.
           </p>
         </div>
 
@@ -451,7 +451,7 @@ function HomePage({
             <strong>{topMetrics.live_review_queue}</strong>
           </div>
           <div className="kpi-card">
-            <span>Auto-Cleared Claims</span>
+            <span>Automatically Cleared Claims</span>
             <strong>{topMetrics.auto_cleared_rate}</strong>
           </div>
         </div>
@@ -612,10 +612,10 @@ function CustomerDashboard({
           <div className="customer-guide">
             <p className="section-title">How To Use This Page</p>
             <ol>
-              <li>Review your saved name and email, then choose the policy and cover level for this claim.</li>
-              <li>Enter the item, incident type, claim amount, and estimated item value as accurately as you can.</li>
+              <li>Review your saved name and email, then choose the gadget policy and cover level for this device claim.</li>
+              <li>Enter the device type, incident type, claim amount, and estimated device value as accurately as you can.</li>
               <li>Write an email subject and message body with dates, what happened, and any useful reference details.</li>
-              <li>Upload your best receipt or invoice, then add a clear image of your ID card before submitting.</li>
+              <li>Upload the best purchase receipt or repair invoice, then add a clear image of your ID card before submitting.</li>
               <li>Use the information icons beside each checkbox if you are unsure whether a detail applies to you.</li>
             </ol>
           </div>
@@ -635,10 +635,10 @@ function CustomerDashboard({
               <label>
                 Policy Type
                 <select value={formValues.policy_type} onChange={(event) => updateField("policy_type", event.target.value)}>
-                  <option value="gadget">Gadget</option>
-                  <option value="contents">Contents</option>
-                  <option value="home">Home</option>
-                  <option value="travel">Travel</option>
+                  <option value="gadget">Gadget Insurance</option>
+                  <option value="electronics_warranty">Electronics Warranty</option>
+                  <option value="device_protection">Device Protection</option>
+                  <option value="portable_electronics">Portable Electronics</option>
                 </select>
               </label>
               <label>
@@ -651,7 +651,7 @@ function CustomerDashboard({
                 </select>
               </label>
               <label>
-                Item Category
+                Device Category
                 <input value={formValues.item_category} onChange={(event) => updateField("item_category", event.target.value)} />
               </label>
               <label>
@@ -668,7 +668,7 @@ function CustomerDashboard({
                 />
               </label>
               <label>
-                Item Value (GBP)
+                Device Value (GBP)
                 <input
                   type="number"
                   min="1"
@@ -725,7 +725,7 @@ function CustomerDashboard({
             </label>
 
             <label>
-              Receipt Or Invoice Evidence
+              Device Receipt Or Repair Invoice
               <input
                 type="file"
                 accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff,.pdf"
@@ -770,7 +770,7 @@ function CustomerDashboard({
             ) : (
               <p className="evidence-note">Attach a clear claimant ID card image or PDF so the claim can be matched to the signed-in policyholder.</p>
             )}
-            <p className="evidence-note">Claimant identity is bound to the signed-in policyholder account.</p>
+            <p className="evidence-note">Claimant identity is bound to the signed-in gadget policyholder account.</p>
             {submissionState.message ? (
               <p className={`form-status ${submissionState.status}`}>{submissionState.message}</p>
             ) : null}
@@ -917,7 +917,7 @@ function CompanyDashboard({ liveAlerts, metrics, queue }) {
             <strong>{metrics.avg_triage_time}</strong>
           </div>
           <div className="mini-kpi">
-            <span>Auto Approvals</span>
+            <span>Automatic Approvals</span>
             <strong>{metrics.auto_approvals}</strong>
           </div>
         </div>
