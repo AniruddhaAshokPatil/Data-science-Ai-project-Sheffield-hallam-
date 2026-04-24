@@ -1,6 +1,21 @@
 # I ignore data directories and generated outputs here because this project
 # creates many local artifacts that should not be committed by accident.
-data/
+data/*
+!data/sample/
+!data/sample/**
+!data/raw/
+data/raw/*
+!data/raw/insurance_claims/
+data/raw/insurance_claims/*
+!data/raw/insurance_claims/claim_email_ham_spam.csv
+!data/raw/nlp/
+data/raw/nlp/*
+!data/raw/nlp/claim_email_ham_spam.csv
+!data/processed/
+data/processed/*
+!data/processed/nlp/
+data/processed/nlp/*
+!data/processed/nlp/claim_email_ham_spam.tsv
 node_modules/
 dist/
 tmp/

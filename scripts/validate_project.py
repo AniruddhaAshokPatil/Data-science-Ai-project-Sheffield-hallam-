@@ -29,6 +29,18 @@ def check_file_exists(file_path):
     return exists
 
 
+def check_any_file_exists(label, file_paths):
+    for file_path in file_paths:
+        if os.path.exists(file_path):
+            print(f"[OK] {label}: {file_path}")
+            return True
+
+    print(f"[MISSING] {label}")
+    for file_path in file_paths:
+        print(f"          {file_path}")
+    return False
+
+
 def check_import(module_name, display_name=None):
     label = display_name or module_name
     try:
@@ -129,12 +141,25 @@ def check_model_files():
 
 def check_local_data_files():
     print_title("4. Checking Local Data Files")
-    data_files = [
-        os.path.join(DATA_DIR, "raw", "nlp", "claim_email_ham_spam.csv"),
-        os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed.csv"),
-        os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed_dictionary.md"),
+    checks = [
+        check_any_file_exists(
+            "Claim email NLP data",
+            [
+                os.path.join(DATA_DIR, "raw", "nlp", "claim_email_ham_spam.csv"),
+                os.path.join(DATA_DIR, "sample", "claims", "claim_email_ham_spam_sample.csv"),
+            ],
+        ),
+        check_any_file_exists(
+            "Claim history data",
+            [
+                os.path.join(DATA_DIR, "raw", "insurance_claims", "claim_history_detailed.csv"),
+                os.path.join(DATA_DIR, "sample", "claims", "claim_history_sample.csv"),
+            ],
+        ),
+        check_file_exists(os.path.join(DATA_DIR, "sample", "manifests", "multimodal_sample_index.csv")),
+        check_file_exists(os.path.join(DATA_DIR, "sample", "manifests", "evidence_manifest_sample.csv")),
     ]
-    return all(check_file_exists(path) for path in data_files)
+    return all(checks)
 
 
 def check_frontend_files():

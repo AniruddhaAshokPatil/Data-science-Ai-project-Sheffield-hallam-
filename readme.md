@@ -190,6 +190,43 @@ This is intentional. My focus is on **system design and integration**, while bei
 
 ---
 
+### **Repository Sample Data**
+
+The full research data and larger image folders are too large for a normal GitHub submission, so I include a small multimodal sample pack in:
+
+```
+data/sample/
+```
+
+This sample pack is enough to understand and run the project workflow. It includes:
+
+* claim email text examples
+* tabular claim-history examples
+* small synthetic receipt images
+* a synthetic repair quote PDF
+* a synthetic ID-style evidence image
+* evidence and multimodal manifests linking each claim to its text, tabular fields, documents, and risk scores
+
+The main index is:
+
+```
+data/sample/manifests/multimodal_sample_index.csv
+```
+
+If the full claim-history file is not available locally, the API automatically falls back to:
+
+```
+data/sample/claims/claim_history_sample.csv
+```
+
+Regenerate the sample pack with:
+
+```bash
+python scripts/prepare_sample_multimodal_data.py
+```
+
+---
+
 ## **Repository Structure**
 
 ```

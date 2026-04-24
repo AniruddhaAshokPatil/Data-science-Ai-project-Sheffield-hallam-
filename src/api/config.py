@@ -5,7 +5,9 @@ from pathlib import Path
 class Settings:
     # The repository root is calculated once so every API module can reuse the same base paths.
     REPO_ROOT = Path(__file__).resolve().parents[2]
-    CLAIMS_DATA_PATH = REPO_ROOT / "data" / "raw" / "insurance_claims" / "claim_history_detailed.csv"
+    FULL_CLAIMS_DATA_PATH = REPO_ROOT / "data" / "raw" / "insurance_claims" / "claim_history_detailed.csv"
+    SAMPLE_CLAIMS_DATA_PATH = REPO_ROOT / "data" / "sample" / "claims" / "claim_history_sample.csv"
+    CLAIMS_DATA_PATH = FULL_CLAIMS_DATA_PATH if FULL_CLAIMS_DATA_PATH.exists() else SAMPLE_CLAIMS_DATA_PATH
     EVIDENCE_UPLOADS_DIR = Path(
         os.getenv("SHIELDWISE_EVIDENCE_UPLOADS_DIR", REPO_ROOT / "data" / "raw" / "insurance_claims" / "uploads")
     )
