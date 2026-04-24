@@ -332,9 +332,11 @@ def _score_email_risk_with_model(claim_story: str) -> float | None:
     mnb_probability = float(assets["mnb_model"].predict_proba(selected_matrix)[0, 1])
     rf_probability = float(assets["rf_model"].predict_proba(selected_matrix)[0, 1])
 
-    # Naive Bayes receives the larger weight because it performs strongly on short text classification.
+    # The model gives the main fraud-language signal, while the heuristic score
+    # keeps real-world edge cases from collapsing into identical 0.02/0.98 values.
     blended_probability = (mnb_probability * 0.75) + (rf_probability * 0.25)
-    calibrated_risk = 0.5 + ((blended_probability - 0.5) * 1.2)
+    heuristic_probability = _score_email_risk_with_heuristics(claim_story)
+    calibrated_risk = (blended_probability * 0.70) + (heuristic_probability * 0.30)
     return round(min(max(calibrated_risk, 0.02), 0.98), 2)
 
 
