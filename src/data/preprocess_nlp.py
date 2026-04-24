@@ -84,10 +84,13 @@ def load_sms_dataset(path):
         csv_df = pd.read_csv(path)
         lowered_columns = {column.lower(): column for column in csv_df.columns}
 
-        if {"label", "body"}.issubset(lowered_columns):
+        body_key = "body" if "body" in lowered_columns else "message_body"
+        subject_key = "subject" if "subject" in lowered_columns else "email_subject"
+
+        if {"label", body_key}.issubset(lowered_columns):
             label_column = lowered_columns["label"]
-            body_column = lowered_columns["body"]
-            subject_column = lowered_columns.get("subject")
+            body_column = lowered_columns[body_key]
+            subject_column = lowered_columns.get(subject_key)
 
             if subject_column:
                 message_series = (

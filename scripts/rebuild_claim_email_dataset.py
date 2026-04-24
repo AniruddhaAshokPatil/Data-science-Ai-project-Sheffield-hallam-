@@ -13,51 +13,37 @@ OUTPUT_PATHS = [
 CSV_COLUMNS = [
     "email_id",
     "claim_id",
-    "policy_number",
-    "claimant_id",
-    "sender_name",
-    "sender_email",
-    "phone_number",
-    "insurer_brand",
-    "handler_team",
-    "subject",
-    "body",
-    "label",
-    "language_risk_band",
+    "claimant_name",
+    "claimant_email",
     "policy_type",
     "coverage_tier",
-    "customer_segment",
-    "item_category",
-    "item_make",
-    "item_model",
-    "item_description",
-    "serial_or_imei_present_flag",
-    "serial_or_imei",
-    "purchase_date",
-    "purchase_price_gbp",
-    "retailer_name",
-    "warranty_status",
+    "device_category",
     "incident_type",
-    "incident_date",
-    "reported_loss_location",
-    "claim_channel",
-    "customer_region",
     "claim_amount_gbp",
-    "excess_amount_gbp",
-    "payment_preference",
-    "bank_change_requested_flag",
-    "attachment_mentioned_flag",
-    "evidence_receipt_flag",
-    "evidence_photo_flag",
-    "evidence_police_report_flag",
-    "evidence_repair_quote_flag",
-    "repair_shop_name",
+    "device_value_gbp",
+    "prior_claims",
+    "claims_last_12_months",
+    "days_since_policy_start",
+    "email_subject",
+    "message_body",
+    "label",
+    "language_risk_band",
+    "recent_high_value_purchase_flag",
+    "unusual_spend_spike_flag",
+    "login_location_changed_flag",
+    "multiple_devices_7_days_flag",
+    "address_changed_recently_flag",
+    "phone_changed_recently_flag",
+    "bank_details_changed_recently_flag",
+    "late_night_submission_flag",
+    "weekend_submission_flag",
+    "receipt_present_flag",
+    "receipt_mismatch_flag",
+    "duplicate_receipt_flag",
+    "image_tamper_suspected_flag",
     "urgency_pressure_flag",
-    "bank_change_flag",
     "vague_event_details_flag",
     "payout_pressure_flag",
-    "contains_amount_flag",
-    "contains_date_flag",
 ]
 
 INSURED_ITEMS = [
@@ -141,7 +127,20 @@ INSURERS = ["ShieldWise", "NorthCover", "Harbour Mutual", "CivicSure", "MetroGua
 HANDLER_TEAMS = ["gadget_claims", "digital_evidence", "repair_network", "fraud_triage", "customer_claims"]
 REGIONS = ["London", "Sheffield", "Manchester", "Leeds", "Birmingham", "Bristol", "Cardiff", "Glasgow", "Edinburgh", "Liverpool"]
 CHANNELS = ["portal_email", "mobile_app", "web_portal", "call_centre_followup", "repair_partner_email"]
-INCIDENTS = ["theft", "loss", "accidental_damage", "water_damage", "screen_damage", "electrical_fault"]
+INCIDENTS = [
+    "theft",
+    "loss",
+    "accidental_damage",
+    "water_damage",
+    "screen_damage",
+    "electrical_fault",
+    "liquid_spill",
+    "battery_failure",
+    "power_surge",
+    "malicious_damage",
+    "in_transit_damage",
+    "accessory_damage",
+]
 RETAILERS = ["Currys", "John Lewis", "Apple Store", "Amazon UK", "Argos", "Scan Computers", "Wex Photo Video", "Richer Sounds"]
 REPAIR_SHOPS = ["iSmash", "Team Knowhow", "Square Repair", "Authorised Service Centre", "Local Repair Partner", "Manufacturer Repair Hub"]
 COVERAGE_TIERS = ["standard", "plus", "premium", "business_plus"]
@@ -280,17 +279,13 @@ def build_rows(row_count=240):
         label = "ham" if index < row_count / 2 else "spam"
         item, category, make, model, base_price = INSURED_ITEMS[index % len(INSURED_ITEMS)]
         claimant_name = NAMES[(index * 5) % len(NAMES)]
-        insurer = INSURERS[(index * 3) % len(INSURERS)]
-        handler_team = HANDLER_TEAMS[(index * 7) % len(HANDLER_TEAMS)]
-        incident = INCIDENTS[(index * 3) % len(INCIDENTS)]
+        incident = INCIDENTS[(index * 5) % len(INCIDENTS)]
         region = REGIONS[(index * 5 + 2) % len(REGIONS)]
-        channel = CHANNELS[(index * 7) % len(CHANNELS)]
         retailer = RETAILERS[(index * 4) % len(RETAILERS)]
         repair_shop = REPAIR_SHOPS[(index * 5) % len(REPAIR_SHOPS)]
         coverage_tier = COVERAGE_TIERS[(index * 2) % len(COVERAGE_TIERS)]
-        customer_segment = SEGMENTS[(index * 3) % len(SEGMENTS)]
-        purchase_price = base_price + (index % 9) * 45
-        claim_amount = round(purchase_price * (0.72 + (index % 5) * 0.07))
+        device_value = base_price + (index % 9) * 45
+        claim_amount = round(device_value * (0.72 + (index % 5) * 0.07))
         purchase_date = start_date - timedelta(days=90 + (index * 11) % 900)
         incident_date = start_date + timedelta(days=(index * 4) % 330)
         serial = serial_for(make, index)
@@ -299,37 +294,43 @@ def build_rows(row_count=240):
         if label == "ham":
             template = HAM_TEMPLATES[risk_variant]
             language_risk_band = ["low", "low", "low", "low", "medium", "medium", "medium", "medium"][risk_variant]
-            attachment_mentioned = 1 if risk_variant != 7 else 0
             receipt_flag = 0 if risk_variant in {4, 7} else 1
-            photo_flag = 1
-            police_report_flag = 1 if incident in {"theft", "loss"} and risk_variant not in {4, 7} else 0
-            repair_quote_flag = 1 if incident not in {"theft", "loss"} or risk_variant in {5, 6} else 0
-            serial_present = 1
             urgency_pressure = 1 if risk_variant in {4, 6} else 0
             bank_change = 1 if risk_variant == 5 else 0
-            bank_change_requested = bank_change
             vague_event_details = 1 if risk_variant == 7 else 0
             payout_pressure = 0
-            contains_date = 1
-            payment_preference = ["bank_transfer", "repair_network", "replacement_voucher"][index % 3]
-            warranty_status = ["in_warranty", "out_of_warranty", "extended_warranty"][index % 3]
+            prior_claims = 0 if risk_variant < 4 else 1
+            claims_last_12_months = 0 if risk_variant != 5 else 1
+            days_since_policy_start = 180 + (index % 8) * 35
+            duplicate_receipt = 0
+            receipt_mismatch = 0
+            image_tamper = 0
+            high_value_purchase = 1 if device_value >= 1500 else 0
+            unusual_spend = 0
+            login_changed = 0
+            multiple_devices = 0
+            address_changed = 0
+            phone_changed = 0
         else:
             template = SPAM_TEMPLATES[risk_variant]
             language_risk_band = ["high", "high", "high", "high", "medium", "medium", "medium", "medium"][risk_variant]
-            attachment_mentioned = 1 if risk_variant in {5, 7} else 0
             receipt_flag = 1 if risk_variant in {5, 7} else 0
-            photo_flag = 1 if risk_variant in {5, 7} else 0
-            police_report_flag = 0 if risk_variant != 7 else 1
-            repair_quote_flag = 1 if risk_variant in {6} else 0
-            serial_present = 1 if risk_variant in {5, 7} else 0
             urgency_pressure = 1 if risk_variant in {0, 2, 3, 6} else 0
             bank_change = 1 if risk_variant in {0, 1, 3, 6} else 0
-            bank_change_requested = bank_change
             vague_event_details = 1 if risk_variant in {1, 3, 4, 7} else 0
             payout_pressure = 1 if risk_variant in {0, 1, 2, 3, 6, 7} else 0
-            contains_date = 1 if risk_variant in {5, 7} else 0
-            payment_preference = "bank_transfer"
-            warranty_status = "unknown" if risk_variant not in {5, 7} else "out_of_warranty"
+            prior_claims = 2 if risk_variant < 4 else 1
+            claims_last_12_months = 1 if risk_variant in {0, 1, 3, 6} else 0
+            days_since_policy_start = 18 if risk_variant < 4 else 75
+            duplicate_receipt = 1 if risk_variant == 5 else 0
+            receipt_mismatch = 1 if risk_variant in {3, 4, 7} else 0
+            image_tamper = 1 if risk_variant in {4, 5} else 0
+            high_value_purchase = 1
+            unusual_spend = 1 if risk_variant in {0, 2, 6} else 0
+            login_changed = 1 if risk_variant in {1, 3} else 0
+            multiple_devices = 1 if risk_variant in {0, 6} else 0
+            address_changed = 1 if risk_variant == 3 else 0
+            phone_changed = 1 if risk_variant in {3, 6} else 0
 
         body = template.format(
             item=item,
@@ -341,64 +342,51 @@ def build_rows(row_count=240):
             region=region,
             retailer=retailer,
             repair_shop=repair_shop,
-            serial=serial if serial_present else "not available",
-            purchase_price=purchase_price,
+            serial=serial,
+            purchase_price=device_value,
             claim_amount=claim_amount,
+        )
+        subject = (HAM_SUBJECTS if label == "ham" else SPAM_SUBJECTS)[index % 6].format(
+            item=item,
+            make=make,
+            model=model,
         )
 
         rows.append(
             {
                 "email_id": code("CLMMAIL", index, 4),
                 "claim_id": code("GCLM", index),
-                "policy_number": f"POL-GAD-{2024 + index % 3}-{index + 42000}",
-                "claimant_id": code("CUS", index % 80),
-                "sender_name": claimant_name,
-                "sender_email": email_for(claimant_name, index),
-                "phone_number": f"+44 7{index % 10}{(index * 37) % 100000000:08d}",
-                "insurer_brand": insurer,
-                "handler_team": handler_team,
-                "subject": (HAM_SUBJECTS if label == "ham" else SPAM_SUBJECTS)[index % 6].format(
-                    item=item,
-                    make=make,
-                    model=model,
-                ),
-                "body": body,
+                "claimant_name": claimant_name,
+                "claimant_email": email_for(claimant_name, index),
+                "policy_type": "Gadget Insurance",
+                "coverage_tier": coverage_tier.title(),
+                "device_category": category,
+                "incident_type": incident,
+                "claim_amount_gbp": claim_amount,
+                "device_value_gbp": device_value,
+                "prior_claims": prior_claims,
+                "claims_last_12_months": claims_last_12_months,
+                "days_since_policy_start": days_since_policy_start,
+                "email_subject": subject,
+                "message_body": body,
                 "label": label,
                 "language_risk_band": language_risk_band,
-                "policy_type": "gadget_equipment",
-                "coverage_tier": coverage_tier,
-                "customer_segment": customer_segment,
-                "item_category": category,
-                "item_make": make,
-                "item_model": model,
-                "item_description": item,
-                "serial_or_imei_present_flag": int(serial_present),
-                "serial_or_imei": serial if serial_present else "",
-                "purchase_date": purchase_date.isoformat(),
-                "purchase_price_gbp": purchase_price,
-                "retailer_name": retailer,
-                "warranty_status": warranty_status,
-                "incident_type": incident,
-                "incident_date": incident_date.isoformat(),
-                "reported_loss_location": region,
-                "claim_channel": channel,
-                "customer_region": region,
-                "claim_amount_gbp": claim_amount,
-                "excess_amount_gbp": [50, 75, 100, 125][index % 4],
-                "payment_preference": payment_preference,
-                "bank_change_requested_flag": int(bank_change_requested),
-                "attachment_mentioned_flag": int(attachment_mentioned),
-                "evidence_receipt_flag": int(receipt_flag),
-                "evidence_photo_flag": int(photo_flag),
-                "evidence_police_report_flag": int(police_report_flag),
-                "evidence_repair_quote_flag": int(repair_quote_flag),
-                "repair_shop_name": repair_shop if repair_quote_flag else "",
+                "recent_high_value_purchase_flag": int(high_value_purchase),
+                "unusual_spend_spike_flag": int(unusual_spend),
+                "login_location_changed_flag": int(login_changed),
+                "multiple_devices_7_days_flag": int(multiple_devices),
+                "address_changed_recently_flag": int(address_changed),
+                "phone_changed_recently_flag": int(phone_changed),
+                "bank_details_changed_recently_flag": int(bank_change),
+                "late_night_submission_flag": int(risk_variant in {0, 3}),
+                "weekend_submission_flag": int(index % 3 == 0),
+                "receipt_present_flag": int(receipt_flag),
+                "receipt_mismatch_flag": int(receipt_mismatch),
+                "duplicate_receipt_flag": int(duplicate_receipt),
+                "image_tamper_suspected_flag": int(image_tamper),
                 "urgency_pressure_flag": int(urgency_pressure),
-                "bank_change_flag": int(bank_change),
                 "vague_event_details_flag": int(vague_event_details),
                 "payout_pressure_flag": int(payout_pressure),
-                "contains_amount_flag": 1,
-                "contains_date_flag": int(contains_date),
             }
         )
 

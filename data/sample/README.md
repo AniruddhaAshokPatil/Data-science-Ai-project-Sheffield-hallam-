@@ -29,6 +29,21 @@ The sample covers:
 - Subtle suspicious claim-language examples
 - High-risk bank-change and payout-pressure examples
 
+## Claim Email Columns
+
+`claims/claim_email_ham_spam_sample.csv` mirrors the required claim-submission form fields instead of storing every possible insurance back-office field. It contains:
+
+- claimant name and email
+- policy type and coverage tier
+- device category and incident type
+- claim amount and device value
+- prior-claim count, claims in the last 12 months, and days since policy start
+- email subject and message body
+- binary behavioural and evidence flags from the claim form
+- `label` and `language_risk_band` for the ham/spam NLP task
+
+The wider `claims/claim_history_sample.csv` remains available for the dashboard/API fallback because the running app expects additional operational fields such as review queue, risk scores, and claim status.
+
 ## Regenerate
 
 From the repository root:
