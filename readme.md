@@ -306,6 +306,12 @@ Run all cells with the virtual environment active. The current risk-score weight
 
 ---
 
+## **Ethics and Responsible AI**
+
+ShieldWise is a student prototype for AI-assisted claim review, not an automated insurer decision system. The responsible-use, fairness, false-positive, explainability, evidence-handling, and deployment-limitations discussion is documented in [docs/ETHICS_RESPONSIBLE_AI.md](docs/ETHICS_RESPONSIBLE_AI.md).
+
+---
+
 ### **Backend Only**
 
 ```bash
@@ -351,6 +357,7 @@ python3 scripts/validate_project.py
 * Small receipt dataset limits deep CV modelling
 * No continuous model monitoring (no drift detection yet)
 * SQLite used for simplicity, not production scale
+* Risk scores are triage signals and must not be treated as automatic fraud decisions
 
 ---
 

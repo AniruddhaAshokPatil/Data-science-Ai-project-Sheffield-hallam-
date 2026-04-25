@@ -972,10 +972,11 @@ This issue covers documenting fairness concerns, false positives, explainability
 - Risks and limitations are documented honestly
 
 **Current Repo Evidence**
-- Mentioned indirectly in project docs, not yet a standalone strong section
+- `docs/ETHICS_RESPONSIBLE_AI.md`
+- `readme.md`
 
 **Status Alignment**
-- Partially complete in documentation terms
+- Implemented as a standalone responsible AI documentation section
 
 ## ISSUE 29
 
