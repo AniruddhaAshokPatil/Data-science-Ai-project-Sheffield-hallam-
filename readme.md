@@ -4,6 +4,8 @@ ShieldWise is my gadget and electronics insurance fraud detection project. I bui
 
 The project brings together a FastAPI backend, a React dashboard, supporting model work, and device-claim data so the workflow can be tested from policyholder submission through to investigator review.
 
+**Requirements:** Python 3.10+ and Node.js 18+
+
 ---
 
 ## **What ShieldWise Does**
@@ -257,6 +259,8 @@ python scripts/prepare_sample_multimodal_data.py
 
 ### **Full System**
 
+These commands run the full ShieldWise application using the included data files and saved model artifacts. You do not need to regenerate the sample data to start the app.
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -281,6 +285,27 @@ Access:
 
 ---
 
+## **Demo Accounts**
+
+Use these credentials after opening the frontend:
+
+* Policyholder: `demo_user / UserPass123!`
+* Investigator: `investigator_anna / InvestigatorPass123!`
+
+---
+
+## **Evaluation Evidence**
+
+To see the model training results, metrics, charts, and evaluation explanation, open:
+
+```text
+backend/ShieldWise_Evaluation_Workflow.ipynb
+```
+
+Run all cells with the virtual environment active. The current risk-score weights are documented in [docs/RISK_SCORING_METHODOLOGY.md](docs/RISK_SCORING_METHODOLOGY.md).
+
+---
+
 ### **Backend Only**
 
 ```bash
@@ -297,15 +322,6 @@ npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
----
-
-## **Demo Accounts**
-
-* Policyholder: `demo_user / UserPass123!`
-* Investigator: `investigator_anna / InvestigatorPass123!`
-
----
-
 ## **Testing**
 
 Run API tests:
@@ -319,14 +335,6 @@ Validate project health:
 ```bash
 python3 scripts/validate_project.py
 ```
-
-## Evaluation Workflow
-
-A consolidated evaluation notebook for the current ShieldWise submission is available at [backend/ShieldWise_Evaluation_Workflow.ipynb](backend/ShieldWise_Evaluation_Workflow.ipynb). I use it to bring together the retained NLP metrics, receipt-model metrics, and the final submission explanation in one place.
-
-The current risk-score weights are documented in [docs/RISK_SCORING_METHODOLOGY.md](docs/RISK_SCORING_METHODOLOGY.md). This file explains the exact email, behavioural, document, and uploaded-evidence values used by the running API.
-
----
 
 ## **Design Decisions (Why This Approach)**
 
