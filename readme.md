@@ -306,6 +306,12 @@ Run all cells with the virtual environment active. The current risk-score weight
 
 ---
 
+## **Final Report**
+
+The written project report is available at [docs/FINAL_REPORT.md](docs/FINAL_REPORT.md). It explains the insurance fraud problem, project architecture, data preparation, runtime logic, tests, results, limitations, ethics, and conclusions.
+
+---
+
 ## **Ethics and Responsible AI**
 
 ShieldWise is a student prototype for AI-assisted claim review, not an automated insurer decision system. The responsible-use, fairness, false-positive, explainability, evidence-handling, and deployment-limitations discussion is documented in [docs/ETHICS_RESPONSIBLE_AI.md](docs/ETHICS_RESPONSIBLE_AI.md).
