@@ -227,6 +227,12 @@ Regenerate the sample pack with:
 python scripts/prepare_sample_multimodal_data.py
 ```
 
+<img width="397" height="601" alt="display1" src="https://github.com/user-attachments/assets/2b0889c2-1c47-46a2-8445-5d017ffb4c73" />
+<img width="1440" height="789" alt="Homepage" src="https://github.com/user-attachments/assets/f665dd14-0878-4dcd-a7c7-a538e07e8181" />
+<img width="1406" height="341" alt="Homepage1" src="https://github.com/user-attachments/assets/76b22083-245e-4d21-be8d-2ea379708450" />
+<img width="1401" height="776" alt="Homepage2" src="https://github.com/user-attachments/assets/935010ad-cfbf-487c-83eb-bf2d366157f3" />
+<img width="1431" height="776" alt="User Dashboard" src="https://github.com/user-attachments/assets/8548dcc5-5945-40e9-b1ad-748781fce848" />
+
 ---
 
 ## **Repository Structure**
