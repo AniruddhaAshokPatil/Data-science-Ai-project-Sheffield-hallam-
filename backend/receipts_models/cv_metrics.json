@@ -1,0 +1,18 @@
+{
+  "MobileNetV2": {
+    "accuracy": 0.9937,
+    "precision": 0.9937,
+    "recall": 1.0,
+    "f1_score": 0.9968,
+    "roc_auc": 0.9108,
+    "threshold": 0.5
+  },
+  "ResNet50": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "roc_auc": null,
+    "threshold": 0.5
+  }
+}

@@ -1,0 +1,9 @@
+[
+  "char_count",
+  "word_count",
+  "unique_word_ratio",
+  "url_count",
+  "email_count",
+  "has_unsubscribe",
+  "phishing_keyword_count"
+]

@@ -1,0 +1,33 @@
+{
+  "thresholds": {
+    "genuine": 0.85,
+    "suspicious": 0.4,
+    "fake": 0.0
+  },
+  "img_size": [
+    224,
+    224
+  ],
+  "num_classes": 12,
+  "classes": [
+    "DG01",
+    "DG02",
+    "DG03",
+    "DX01",
+    "DX02",
+    "DX03",
+    "LG01",
+    "LG02",
+    "LG03",
+    "LX01",
+    "LX02",
+    "LX03"
+  ],
+  "models": {
+    "mobilenet": "mobilenet_final.h5",
+    "resnet": "resnet_final.h5",
+    "ocsvm": "ocsvm.pkl",
+    "scaler": "feature_scaler.pkl",
+    "encoder": "label_encoder.pkl"
+  }
+}

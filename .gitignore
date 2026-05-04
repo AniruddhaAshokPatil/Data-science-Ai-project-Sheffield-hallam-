@@ -1,0 +1,50 @@
+# I ignore data directories and generated outputs here because this project
+# creates many local artifacts that should not be committed by accident.
+data/*
+!data/sample/
+!data/sample/**
+!data/raw/
+data/raw/*
+!data/raw/insurance_claims/
+data/raw/insurance_claims/*
+!data/raw/insurance_claims/claim_email_ham_spam.csv
+!data/raw/nlp/
+data/raw/nlp/*
+!data/raw/nlp/claim_email_ham_spam.csv
+!data/processed/
+data/processed/*
+!data/processed/nlp/
+data/processed/nlp/*
+!data/processed/nlp/claim_email_ham_spam.tsv
+node_modules/
+dist/
+tmp/
+venv/
+.venv/
+venv_windows_backup/
+Data-science-Ai-project-Sheffield-hallam--main/
+# I ignore Python cache and coverage files because they are generated during
+# development and testing, not written as source code.
+__pycache__/
+*.py[cod]
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+.env
+.env.local
+true.env
+src/frontend/.env
+src/frontend/.env.local
+.vscode/
+$RECYCLE.BIN/
+~$*.docx
+.github/copilot-instructions.md
+# I ignore local claim submissions and uploaded evidence because they are
+# generated while I demo the insurance workflow and should not be submitted.
+data/raw/insurance_claims/submitted_claims.csv
+data/raw/insurance_claims/evidence_manifest.csv
+data/raw/insurance_claims/uploads/
+data/processed/shieldwise_runtime.db
